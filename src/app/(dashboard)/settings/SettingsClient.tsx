@@ -1,4 +1,5 @@
 "use client";
+import ChangePasswordForm from "@/components/forms/ChangePasswordForm";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -118,6 +119,12 @@ export default function SettingsClient({ profile, userId, email, cvConfig }: Pro
           ))}
         </div>
       </div>
+
+      {/* Cambiar contraseña */}
+<div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+  <h2 className="font-bold text-gray-900 mb-4">Cambiar contraseña</h2>
+  <ChangePasswordForm />
+</div>
 
       {/* Links rápidos */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
