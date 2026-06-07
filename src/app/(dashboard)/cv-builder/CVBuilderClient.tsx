@@ -4,8 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { generateCVData } from "@/lib/cv-generator";
 import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration } from "@/types";
 import { toast } from "sonner";
-import { Loader2, Palette, CheckCircle2, Eye, Settings2 } from "lucide-react";
-import { Share2 } from "lucide-react";
+import { Loader2, Palette, CheckCircle2, Eye, Settings2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import PDFDownloadButton from "@/components/cv-templates/PDFDownloadButton";
@@ -44,7 +43,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   if (!profile) {
     return (
       <div className="text-center py-16">
-        <p className="text-gray-500">Completa tu <a href="/profile" className="underline text-green-600">perfil</a> antes de generar el CV.</p>
+        <p className="text-gray-500">
+          Completa tu <a href="/profile" className="underline text-green-600">perfil</a> antes de generar el CV.
+        </p>
       </div>
     );
   }
@@ -71,6 +72,12 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     setSaving(false);
   };
 
+  const handleShare = () => {
+    const url = `${window.location.origin}/p/${profile.username_slug}`;
+    navigator.clipboard.writeText(url);
+    toast.success("¡Enlace copiado al portapapeles! 🔗");
+  };
+
   const renderPreview = () => {
     switch (selectedTemplate) {
       case "classic":   return <CVPreviewClassic   data={cvData} />;
@@ -81,6 +88,8 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in">
+
+      {/* Header con título y botones */}
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Generador de CV</h1>
@@ -88,13 +97,27 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
             {records.filter(r => r.is_visible_in_cv).length} registros · {skills.length} habilidades
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={saveConfig} disabled={saving}
+
+        {/* Botones de acción */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-colors hover:bg-blue-50"
+            style={{ borderColor: "#2563eb", color: "#2563eb" }}>
+            <Share2 size={15} />
+            Compartir
+          </button>
+
+          <button
+            onClick={saveConfig}
+            disabled={saving}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl disabled:opacity-60"
             style={{ background: "#16a34a" }}>
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-            {saving ? "Guardando…" : "Guardar"}
+            {saving
+              ? <><Loader2 size={15} className="animate-spin" /> Guardando…</>
+              : <><CheckCircle2 size={15} /> Guardar</>}
           </button>
+
           <PDFDownloadButton
             data={cvData}
             fileName={`CV_${profile.first_name}_${profile.last_name}_Smartfolio.pdf`}
@@ -103,31 +126,26 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
         </div>
       </div>
 
-      {/* Botón compartir */}
-<button
-  onClick={() => {
-    const url = `${window.location.origin}/p/${profile.username_slug}`;
-    navigator.clipboard.writeText(url);
-    toast.success("¡Enlace copiado al portapapeles! 🔗");
-  }}
-  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-colors"
-  style={{ borderColor: "#2563eb", color: "#2563eb" }}>
-  <Share2 size={15} />
-  Compartir
-</button>
-
+      {/* Contenido principal */}
       <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-6">
+
+        {/* Panel izquierdo: configuración */}
         <aside className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+            {/* Tabs Plantilla / Color */}
             <div className="flex border-b border-gray-100">
               {[
                 { id: "template", label: "Plantilla", icon: Palette },
                 { id: "color",    label: "Color",     icon: Settings2 },
               ].map(({ id, label, icon: Icon }) => (
-                <button key={id} onClick={() => setTab(id as any)}
+                <button key={id}
+                  onClick={() => setTab(id as "template" | "color")}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors",
-                    tab === id ? "bg-green-50 text-green-700 border-b-2 border-green-600" : "text-gray-500 hover:text-gray-700"
+                    tab === id
+                      ? "bg-green-50 text-green-700 border-b-2 border-green-600"
+                      : "text-gray-500 hover:text-gray-700"
                   )}>
                   <Icon size={14} /> {label}
                 </button>
@@ -135,15 +153,17 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
             </div>
 
             <div className="p-4">
+              {/* Tab: Plantillas */}
               {tab === "template" && (
                 <div className="space-y-2">
                   {templates.map((t) => (
-                    <button key={t.id} onClick={() => setSelectedTemplate(t.template_key)}
+                    <button key={t.id}
+                      onClick={() => setSelectedTemplate(t.template_key)}
                       className={cn(
                         "w-full text-left p-3.5 rounded-xl border-2 transition-all",
                         selectedTemplate === t.template_key
                           ? "border-green-500 bg-green-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                       )}>
                       <div className="flex items-center justify-between">
                         <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
@@ -159,31 +179,60 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                 </div>
               )}
 
+              {/* Tab: Colores */}
               {tab === "color" && (
                 <div className="space-y-3">
-                  <p className="text-xs text-gray-500">Color de acento:</p>
+                  <p className="text-xs text-gray-500">Color de acento del CV:</p>
                   <div className="grid grid-cols-4 gap-2">
                     {ACCENT_COLORS.map(({ hex, name }) => (
-                      <button key={hex} onClick={() => setAccentColor(hex)} title={name}
+                      <button key={hex}
+                        onClick={() => setAccentColor(hex)}
+                        title={name}
                         className={cn(
                           "w-full aspect-square rounded-xl border-2 transition-all hover:scale-105",
-                          accentColor === hex ? "border-gray-900 scale-105" : "border-transparent"
+                          accentColor === hex ? "border-gray-900 scale-105 shadow-md" : "border-transparent"
                         )}
-                        style={{ background: hex }} />
+                        style={{ background: hex }}
+                      />
                     ))}
                   </div>
-                  <input type="color" value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="w-full h-10 rounded-lg cursor-pointer border border-gray-200" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Personalizado:</span>
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="w-10 h-10 rounded-lg cursor-pointer border border-gray-200"
+                    />
+                    <span className="text-xs font-mono text-gray-500">{accentColor}</span>
+                  </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Resumen rápido */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Resumen</p>
+            <div className="space-y-2">
+              {[
+                { label: "Plantilla",   value: currentTemplate?.name ?? "—" },
+                { label: "Registros",   value: `${records.filter(r => r.is_visible_in_cv).length} visibles` },
+                { label: "Habilidades", value: `${skills.length} en total` },
+              ].map((s) => (
+                <div key={s.label} className="flex justify-between text-xs">
+                  <span className="text-gray-500">{s.label}</span>
+                  <span className="font-medium text-gray-700">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </aside>
 
+        {/* Panel derecho: preview */}
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-            <Eye size={12} /> Vista previa
+            <Eye size={12} /> Vista previa — el PDF puede variar ligeramente en tipografía
           </div>
           <div className="bg-gray-100 rounded-2xl p-4 border border-gray-200 min-h-96">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden min-h-96">
@@ -191,6 +240,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
