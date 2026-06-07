@@ -1,9 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-} from "recharts";
 import { Users, FileText, BookOpen, Eye } from "lucide-react";
 
 interface Props {
@@ -27,18 +22,13 @@ export default function AdminDashboardClient({
   totalUsers, totalRecords, totalDocs,
   recentUsers, chartByType, chartByMonth,
 }: Props) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   const totalVisits = recentUsers.reduce((acc, u) => acc + (u.visit_count ?? 0), 0);
-
-  const typeData = chartByType.map(d => ({
-    ...d,
-    name: RECORD_LABELS[d.name] ?? d.name,
-  }));
+  const maxType  = Math.max(...chartByType.map(d => d.value), 1);
+  const maxMonth = Math.max(...chartByMonth.map(d => d.value), 1);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-6">
 
       {/* Header */}
       <div>
@@ -51,7 +41,7 @@ export default function AdminDashboardClient({
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label:"Usuarios",            value: totalUsers,   icon: Users,    color:"#16a34a", bg:"#f0fdf4" },
+          { label:"Usuarios",             value: totalUsers,   icon: Users,    color:"#16a34a", bg:"#f0fdf4" },
           { label:"Registros académicos", value: totalRecords, icon: BookOpen, color:"#2563eb", bg:"#eff6ff" },
           { label:"Documentos",           value: totalDocs,    icon: FileText, color:"#7c3aed", bg:"#f5f3ff" },
           { label:"Visitas totales",      value: totalVisits,  icon: Eye,      color:"#d97706", bg:"#fffbeb" },
@@ -70,87 +60,99 @@ export default function AdminDashboardClient({
         ))}
       </div>
 
-      {/* Gráficas — solo se renderizan cuando el componente está montado */}
-      {mounted && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Gráficas CSS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Barras por tipo */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <h2 className="font-bold text-gray-900 mb-4">Registros por categoría</h2>
-            {typeData.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
-            ) : (
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={typeData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius:"8px", border:"1px solid #e5e7eb", fontSize:"12px" }}
-                    />
-                    <Bar dataKey="value" fill="#16a34a" radius={[4,4,0,0]} name="Registros" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          {/* Pie distribución */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <h2 className="font-bold text-gray-900 mb-4">Distribución de tipos</h2>
-            {typeData.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
-            ) : (
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={typeData}
-                      cx="50%" cy="50%"
-                      outerRadius={75}
-                      dataKey="value"
-                      label={({ name, percent }) =>
-                        `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                      }
-                      labelLine={false}>
-                      {typeData.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ borderRadius:"8px", border:"1px solid #e5e7eb", fontSize:"12px" }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          {/* Usuarios por mes */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 lg:col-span-2">
-            <h2 className="font-bold text-gray-900 mb-4">Nuevos usuarios por mes</h2>
-            {chartByMonth.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
-            ) : (
-              <div style={{ width: "100%", height: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius:"8px", border:"1px solid #e5e7eb", fontSize:"12px" }}
-                    />
-                    <Bar dataKey="value" fill="#2563eb" radius={[4,4,0,0]} name="Usuarios" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
+        {/* Barras por tipo */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <h2 className="font-bold text-gray-900 mb-5">Registros por categoría</h2>
+          {chartByType.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+          ) : (
+            <div className="space-y-3">
+              {chartByType.map((d, i) => (
+                <div key={d.name}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-600 font-medium">
+                      {RECORD_LABELS[d.name] ?? d.name}
+                    </span>
+                    <span className="text-gray-400">{d.value}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-6 overflow-hidden">
+                    <div
+                      className="h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-700"
+                      style={{
+                        width: `${(d.value / maxType) * 100}%`,
+                        background: COLORS[i % COLORS.length],
+                        minWidth: "32px",
+                      }}>
+                      <span className="text-white text-xs font-bold">{d.value}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Distribución visual */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <h2 className="font-bold text-gray-900 mb-5">Distribución de tipos</h2>
+          {chartByType.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+          ) : (
+            <div className="space-y-2">
+              {chartByType.map((d, i) => {
+                const pct = Math.round((d.value / totalRecords) * 100);
+                return (
+                  <div key={d.name} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ background: COLORS[i % COLORS.length] }} />
+                    <span className="text-xs text-gray-600 flex-1">
+                      {RECORD_LABELS[d.name] ?? d.name}
+                    </span>
+                    <span className="text-xs font-bold text-gray-700">{pct}%</span>
+                    <div className="w-24 bg-gray-100 rounded-full h-2">
+                      <div className="h-2 rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: COLORS[i % COLORS.length],
+                        }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Usuarios por mes */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 lg:col-span-2">
+          <h2 className="font-bold text-gray-900 mb-5">Nuevos usuarios por mes</h2>
+          {chartByMonth.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+          ) : (
+            <div className="flex items-end gap-3 h-36">
+              {chartByMonth.map((d) => (
+                <div key={d.name} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold text-gray-700">{d.value}</span>
+                  <div
+                    className="w-full rounded-t-lg transition-all duration-700"
+                    style={{
+                      height: `${(d.value / maxMonth) * 100}px`,
+                      background: "#2563eb",
+                      minHeight: "8px",
+                    }} />
+                  <span className="text-xs text-gray-400 truncate w-full text-center">
+                    {d.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
 
       {/* Tabla de usuarios */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
