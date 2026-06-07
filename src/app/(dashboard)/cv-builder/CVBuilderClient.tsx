@@ -5,6 +5,7 @@ import { generateCVData } from "@/lib/cv-generator";
 import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration } from "@/types";
 import { toast } from "sonner";
 import { Loader2, Palette, CheckCircle2, Eye, Settings2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import PDFDownloadButton from "@/components/cv-templates/PDFDownloadButton";
@@ -101,6 +102,19 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
           />
         </div>
       </div>
+
+      {/* Botón compartir */}
+<button
+  onClick={() => {
+    const url = `${window.location.origin}/p/${profile.username_slug}`;
+    navigator.clipboard.writeText(url);
+    toast.success("¡Enlace copiado al portapapeles! 🔗");
+  }}
+  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-colors"
+  style={{ borderColor: "#2563eb", color: "#2563eb" }}>
+  <Share2 size={15} />
+  Compartir
+</button>
 
       <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-6">
         <aside className="space-y-4">
