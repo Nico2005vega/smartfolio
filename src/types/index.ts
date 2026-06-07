@@ -75,6 +75,8 @@ export interface Profile {
   portfolio_public: boolean;
   created_at:       string;
   updated_at:       string;
+  visit_count: number | null;
+  
 }
 
 export interface Document {
