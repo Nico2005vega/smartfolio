@@ -28,14 +28,12 @@ export default async function AdminPage() {
       .select("id,first_name,last_name,plan,role,created_at,visit_count")
       .order("created_at", { ascending: false })
       .limit(10),
-    supabase.from("academic_records")
-      .select("record_type"),
+    supabase.from("academic_records").select("record_type"),
     supabase.from("profiles")
       .select("created_at")
       .order("created_at", { ascending: true }),
   ]);
 
-  // Agrupar registros por tipo
   const byType = (recordsByType ?? []).reduce<Record<string, number>>((acc, r) => {
     acc[r.record_type] = (acc[r.record_type] ?? 0) + 1;
     return acc;
@@ -46,9 +44,10 @@ export default async function AdminPage() {
     value,
   }));
 
-  // Usuarios por mes
   const byMonth = (allProfiles ?? []).reduce<Record<string, number>>((acc, p) => {
-    const month = new Date(p.created_at).toLocaleDateString("es-CO", { month: "short", year: "2-digit" });
+    const month = new Date(p.created_at).toLocaleDateString("es-CO", {
+      month: "short", year: "2-digit"
+    });
     acc[month] = (acc[month] ?? 0) + 1;
     return acc;
   }, {});
