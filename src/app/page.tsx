@@ -1,11 +1,40 @@
+'use client';
+
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-export default async function HomePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+export default function HomePage() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Verificar si el usuario está autenticado
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/user');
+        if (response.ok) {
+          window.location.href = '/dashboard';
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{background:"linear-gradient(135deg, #0d5c3a 0%, #1a4d2e 25%, #0f3d2a 50%, #1a4d2e 75%, #0d5c3a 100%)"}}>
+        <div className="animate-pulse">
+          <div className="text-white text-xl">Cargando...</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen overflow-hidden" style={{background:"linear-gradient(135deg, #0d5c3a 0%, #1a4d2e 25%, #0f3d2a 50%, #1a4d2e 75%, #0d5c3a 100%)"}}>
@@ -153,23 +182,6 @@ export default async function HomePage() {
         <p className="font-semibold mb-2">Smartfolio · BAN 00329 · Tecnología en Desarrollo de Sistemas Informáticos · UTS Bucaramanga</p>
         <p className="text-xs">Nicolás Vega Ruiz · Juan Carlos Rúgeles Navarro · Dir. Edward Villamizar</p>
       </footer>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out forwards;
-        }
-      `}</style>
     </main>
   );
 }
