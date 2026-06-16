@@ -3,33 +3,35 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType } from "@/types";
 import Link from "next/link";
-import { Plus, ExternalLink, Edit, Search, Filter, X } from "lucide-react";
+import { Plus, Edit, Search, X, Filter } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default function AcademicPage() {
-  const [records, setRecords] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [records, setRecords]         = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchRecords = async () => {
+    const fetch = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("academic_records")
-        .select("*, document:documents(file_name, public_url)")
+        .select("*, document:documents(file_name,public_url)")
         .eq("profile_id", user.id)
         .order("start_date", { ascending: false });
       setRecords(data ?? []);
       setLoading(false);
     };
-    fetchRecords();
+    fetch();
   }, []);
 
-  const filtered = records.filter((r) => {
-    const matchSearch =
+  const types = [...new Set(records.map(r => r.record_type))];
+
+  const filtered = records.filter(r => {
+    const matchSearch = !search ||
       r.title.toLowerCase().includes(search.toLowerCase()) ||
       r.institution.toLowerCase().includes(search.toLowerCase());
     const matchFilter = activeFilter === "all" || r.record_type === activeFilter;
@@ -41,75 +43,76 @@ export default function AcademicPage() {
     return acc;
   }, {});
 
-  const COLORS: Record<string, string> = {
-    certificate: "#dcfce7", course: "#dbeafe", diploma: "#f3e8ff",
-    degree: "#fef3c7", act: "#fee2e2", seminar: "#e0f2fe",
-    workshop: "#fce7f3", experience: "#f0fdf4",
-  };
-
-  const types = [...new Set(records.map(r => r.record_type))];
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px", gap: "16px", flexWrap: "wrap" }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Formación Académica</h1>
-          <p className="text-gray-500 text-sm mt-1">{records.length} registros guardados</p>
+          <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#111827", margin: "0 0 4px" }}>Formación Académica</h1>
+          <p style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}>
+            {records.length} registro{records.length !== 1 ? "s" : ""} guardado{records.length !== 1 ? "s" : ""}
+          </p>
         </div>
-        <Link href="/academic/new"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm"
-          style={{ background: "#16a34a" }}>
-          <Plus size={16} /> Nuevo registro
+        <Link href="/academic/new" style={{
+          display: "inline-flex", alignItems: "center", gap: "7px",
+          padding: "10px 18px", background: "#16a34a", color: "white",
+          borderRadius: "12px", textDecoration: "none",
+          fontSize: "13px", fontWeight: "600",
+          boxShadow: "0 2px 8px rgba(22,163,74,0.25)",
+        }}>
+          <Plus size={15} /> Nuevo registro
         </Link>
       </div>
 
-      {/* Búsqueda y filtros */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
-        {/* Buscador */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Buscador y filtros */}
+      <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "16px", marginBottom: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+        <div style={{ position: "relative", marginBottom: "12px" }}>
+          <Search size={15} color="#9ca3af" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
           <input
-            type="text"
-            placeholder="Buscar por título o institución..."
-            value={search}
+            type="text" value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="Buscar por título o institución..."
+            style={{
+              width: "100%", padding: "10px 36px 10px 36px",
+              border: "1.5px solid #f0f0f0", borderRadius: "10px",
+              fontSize: "13px", outline: "none", background: "#fafafa",
+              boxSizing: "border-box",
+            }}
+            onFocus={(e) => e.target.style.borderColor = "#16a34a"}
+            onBlur={(e) => e.target.style.borderColor = "#f0f0f0"}
           />
           {search && (
-            <button onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X size={14} />
+            <button onClick={() => setSearch("")} style={{
+              position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", padding: "4px",
+            }}>
+              <X size={13} color="#9ca3af" />
             </button>
           )}
         </div>
 
-        {/* Filtros por tipo */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-            style={{
-              background: activeFilter === "all" ? "#16a34a" : "white",
-              color: activeFilter === "all" ? "white" : "#6b7280",
-              borderColor: activeFilter === "all" ? "#16a34a" : "#e5e7eb",
-            }}>
-            <Filter size={11} /> Todos ({records.length})
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          <button onClick={() => setActiveFilter("all")} style={{
+            padding: "5px 12px", borderRadius: "99px", border: "1.5px solid",
+            fontSize: "12px", fontWeight: "500", cursor: "pointer",
+            background: activeFilter === "all" ? "#16a34a" : "white",
+            color: activeFilter === "all" ? "white" : "#6b7280",
+            borderColor: activeFilter === "all" ? "#16a34a" : "#e5e7eb",
+          }}>
+            <Filter size={11} style={{ verticalAlign: "-1px", marginRight: "4px" }} />
+            Todos ({records.length})
           </button>
-          {types.map((type) => (
-            <button key={type}
-              onClick={() => setActiveFilter(type)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-              style={{
-                background: activeFilter === type ? "#16a34a" : "white",
-                color: activeFilter === type ? "white" : "#6b7280",
-                borderColor: activeFilter === type ? "#16a34a" : "#e5e7eb",
-              }}>
+          {types.map(type => (
+            <button key={type} onClick={() => setActiveFilter(type)} style={{
+              padding: "5px 12px", borderRadius: "99px", border: "1.5px solid",
+              fontSize: "12px", fontWeight: "500", cursor: "pointer",
+              background: activeFilter === type ? "#16a34a" : "white",
+              color: activeFilter === type ? "white" : "#6b7280",
+              borderColor: activeFilter === type ? "#16a34a" : "#e5e7eb",
+            }}>
               {RECORD_TYPE_ICONS[type as RecordType]} {RECORD_TYPE_LABELS[type as RecordType]}
-              <span className="ml-1 opacity-70">
-                ({records.filter(r => r.record_type === type).length})
-              </span>
+              <span style={{ marginLeft: "4px", opacity: 0.7 }}>({records.filter(r => r.record_type === type).length})</span>
             </button>
           ))}
         </div>
@@ -117,71 +120,83 @@ export default function AcademicPage() {
 
       {/* Resultados */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Cargando registros...</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {[1,2].map(i => (
+            <div key={i} style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "20px", height: "120px" }} className="animate-pulse" />
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-          <div className="text-5xl mb-4">🔍</div>
-          <h3 className="font-bold text-gray-900 mb-2">Sin resultados</h3>
-          <p className="text-gray-500 text-sm">
-            {search ? `No hay registros que coincidan con "${search}"` : "Aún no tienes registros académicos."}
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "48px", textAlign: "center" }}>
+          <p style={{ fontSize: "36px", margin: "0 0 10px" }}>🔍</p>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: "#374151", margin: "0 0 6px" }}>Sin resultados</p>
+          <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 16px" }}>
+            {search ? `No hay registros que coincidan con "${search}"` : "Aún no tienes registros académicos"}
           </p>
-          {search && (
-            <button onClick={() => { setSearch(""); setActiveFilter("all"); }}
-              className="mt-4 text-sm font-medium"
-              style={{ color: "#16a34a" }}>
-              Limpiar búsqueda
-            </button>
-          )}
+          {search
+            ? <button onClick={() => { setSearch(""); setActiveFilter("all"); }} style={{ fontSize: "13px", color: "#16a34a", background: "none", border: "none", cursor: "pointer", fontWeight: "600" }}>Limpiar búsqueda</button>
+            : <Link href="/academic/new" style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 18px", background: "#16a34a", color: "white", borderRadius: "12px", textDecoration: "none", fontSize: "13px", fontWeight: "600" }}>
+                <Plus size={14} /> Agregar primero
+              </Link>
+          }
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           {search && (
-            <p className="text-sm text-gray-500">
-              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para <strong>"{search}"</strong>
+            <p style={{ fontSize: "13px", color: "#9ca3af" }}>
+              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para <strong style={{ color: "#374151" }}>"{search}"</strong>
             </p>
           )}
           {Object.entries(byType).map(([type, items]) => (
-            <div key={type} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100"
-                style={{ background: COLORS[type] + "33" }}>
-                <span className="text-xl">{RECORD_TYPE_ICONS[type as RecordType]}</span>
-                <h2 className="font-semibold text-gray-800 text-sm">
+            <div key={type} style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 18px", background: "#fafafa", borderBottom: "1px solid #f0f0f0" }}>
+                <span style={{ fontSize: "18px" }}>{RECORD_TYPE_ICONS[type as RecordType]}</span>
+                <h2 style={{ fontSize: "14px", fontWeight: "700", color: "#111827", margin: 0 }}>
                   {RECORD_TYPE_LABELS[type as RecordType]}
                 </h2>
-                <span className="ml-auto text-xs font-medium bg-white bg-opacity-60 px-2 py-0.5 rounded-full text-gray-600">
+                <span style={{ marginLeft: "auto", fontSize: "11px", color: "#9ca3af", background: "#f0f0f0", padding: "2px 8px", borderRadius: "99px" }}>
                   {items.length}
                 </span>
               </div>
-              <div className="divide-y divide-gray-50">
-                {items.map((r) => (
-                  <div key={r.id} className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm truncate">{r.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">{r.institution}</p>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="text-xs text-gray-400">
+              <div>
+                {items.map((r, i) => (
+                  <div key={r.id} style={{
+                    display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
+                    borderBottom: i < items.length - 1 ? "1px solid #f8f8f8" : "none",
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "#111827", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.title}
+                      </p>
+                      <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.institution}
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        <span style={{ fontSize: "11px", color: "#9ca3af" }}>
                           {formatDate(r.start_date)}
                           {r.end_date ? ` — ${formatDate(r.end_date)}` : ""}
                         </span>
                         {r.duration_hours && (
-                          <span className="text-xs text-gray-400">· {r.duration_hours}h</span>
+                          <span style={{ fontSize: "11px", color: "#9ca3af" }}>· {r.duration_hours}h</span>
                         )}
                         {r.document?.public_url && (
-                          <a href={r.document.public_url} target="_blank" rel="noopener"
-                            className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
-                            <ExternalLink size={10} /> Ver documento
+                          <a href={r.document.public_url} target="_blank" style={{ fontSize: "11px", color: "#16a34a", textDecoration: "none" }}>
+                            📎 Ver documento
                           </a>
                         )}
                         {!r.is_visible_in_cv && (
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                          <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f0f0f0", padding: "1px 6px", borderRadius: "99px" }}>
                             Oculto en CV
                           </span>
                         )}
                       </div>
                     </div>
-                    <Link href={`/academic/${r.id}/edit`}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
-                      <Edit size={14} />
+                    <Link href={`/academic/${r.id}/edit`} style={{
+                      padding: "8px", borderRadius: "10px",
+                      color: "#9ca3af", textDecoration: "none",
+                      display: "flex", alignItems: "center",
+                      flexShrink: 0,
+                    }}>
+                      <Edit size={15} />
                     </Link>
                   </div>
                 ))}
