@@ -1,128 +1,257 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType } from "@/types";
 import Link from "next/link";
-import { FileText, Zap, Globe, Shield, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Plus, FileText, Palette, ArrowRight, TrendingUp, Award, BookOpen } from "lucide-react";
+import { formatDateRelative } from "@/lib/utils";
 
-export default async function HomePage() {
+export const metadata = { title: "Dashboard" };
+
+export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  if (!user) redirect("/login");
+
+  const [{ data: profile }, { data: records }, { data: docs }, { data: skills }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("academic_records").select("id,record_type,title,institution,created_at").eq("profile_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("documents").select("id").eq("profile_id", user.id),
+    supabase.from("skills").select("id").eq("profile_id", user.id),
+  ]);
+
+  const byType = (records ?? []).reduce<Record<string, number>>((acc, r) => {
+    acc[r.record_type] = (acc[r.record_type] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const recent = (records ?? []).slice(0, 4);
+  const totalRec  = records?.length ?? 0;
+  const totalDocs = docs?.length ?? 0;
+  const totalSkills = skills?.length ?? 0;
+
+  const profileComplete = !!(profile?.first_name && profile?.bio && profile?.city);
+  const hasRecords  = totalRec > 0;
+  const hasDocs     = totalDocs > 0;
+  const completeness = [profileComplete, hasRecords, hasDocs, totalSkills > 0].filter(Boolean).length;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
-      {/* NAVBAR */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 48px", background: "white",
-        borderBottom: "1px solid #f0f0f0", position: "sticky", top: 0, zIndex: 50,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+
+      {/* Bienvenida */}
+      <div style={{
+        background: "linear-gradient(135deg, #052e16, #166534)",
+        borderRadius: "20px", padding: "28px 32px",
+        marginBottom: "24px", position: "relative", overflow: "hidden",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "36px", height: "36px", borderRadius: "9px", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(22,163,74,0.3)" }}>
-            <span style={{ color: "white", fontWeight: "800", fontSize: "16px" }}>S</span>
-          </div>
-          <div>
-            <span style={{ fontSize: "17px", fontWeight: "700", color: "#111827" }}>Smartfolio</span>
-            <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "8px" }}>BAN 00329 · UTS</span>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link href="/login" style={{ fontSize: "14px", fontWeight: "500", color: "#6b7280", textDecoration: "none", padding: "8px 16px" }}>
-            Iniciar sesión
-          </Link>
-          <Link href="/register" style={{ fontSize: "14px", fontWeight: "600", color: "white", textDecoration: "none", padding: "9px 20px", background: "#16a34a", borderRadius: "9px", boxShadow: "0 2px 8px rgba(22,163,74,0.3)" }}>
-            Comenzar gratis
-          </Link>
-        </div>
-      </nav>
-
-      {/* HERO */}
-      <section style={{ background: "linear-gradient(145deg, #052e16 0%, #14532d 50%, #166534 100%)", padding: "80px 48px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.04, backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div style={{ position: "absolute", top: "-100px", right: "10%", width: "400px", height: "400px", borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
-        <div style={{ position: "absolute", bottom: "-80px", left: "5%", width: "300px", height: "300px", borderRadius: "50%", background: "rgba(74,222,128,0.06)" }} />
-        <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: "40px", padding: "6px 16px", marginBottom: "24px" }}>
-            <span style={{ fontSize: "13px", color: "#4ade80", fontWeight: "500" }}>🎓 Proyecto BAN 00329 · UTS Bucaramanga</span>
-          </div>
-          <h1 style={{ fontSize: "52px", fontWeight: "800", color: "white", lineHeight: "1.1", margin: "0 0 16px" }}>
-            Tu portafolio profesional,<br />
-            <span style={{ color: "#4ade80" }}>generado automáticamente</span>
-          </h1>
-          <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.65)", margin: "0 auto 36px", lineHeight: "1.7", maxWidth: "560px" }}>
-            Centraliza tus certificados, cursos, diplomados y logros académicos. Smartfolio genera tu hoja de vida en segundos.
-          </p>
-          <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 28px", background: "#16a34a", color: "white", textDecoration: "none", borderRadius: "12px", fontWeight: "700", fontSize: "15px", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}>
-              Crear mi portafolio gratis <ArrowRight size={16} />
-            </Link>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 28px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "white", textDecoration: "none", borderRadius: "12px", fontWeight: "600", fontSize: "15px" }}>
-              Ya tengo cuenta
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section style={{ padding: "72px 48px", maxWidth: "1100px", margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <h2 style={{ fontSize: "32px", fontWeight: "700", color: "#111827", margin: "0 0 12px" }}>Todo lo que necesitas en un solo lugar</h2>
-          <p style={{ fontSize: "16px", color: "#6b7280", margin: 0 }}>Diseñado para estudiantes universitarios colombianos</p>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-          {[
-            { icon: FileText, title: "8 tipos de registro",  desc: "Certificados, títulos, diplomados, seminarios, talleres y más.", color: "#16a34a", bg: "#f0fdf4" },
-            { icon: Zap,      title: "CV automático",        desc: "Tu hoja de vida se genera sola desde tus datos. Lista en segundos.", color: "#2563eb", bg: "#eff6ff" },
-            { icon: Globe,    title: "Portafolio web",       desc: "URL personalizada: smartfolio.co/p/tu-nombre — visible para reclutadores.", color: "#7c3aed", bg: "#f5f3ff" },
-            { icon: Shield,   title: "Documentos seguros",   desc: "Sube PDFs e imágenes como soporte de tus certificaciones.", color: "#d97706", bg: "#fffbeb" },
-          ].map(({ icon: Icon, title, desc, color, bg }) => (
-            <div key={title} style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                <Icon size={22} color={color} />
-              </div>
-              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#111827", margin: "0 0 8px" }}>{title}</h3>
-              <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, lineHeight: "1.6" }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section style={{ margin: "0 48px 72px", background: "linear-gradient(135deg, #052e16, #166534)", borderRadius: "24px", padding: "56px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "24px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", right: "-40px", top: "-40px", width: "200px", height: "200px", borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+        <div style={{ position: "absolute", right: "-20px", top: "-20px", width: "180px", height: "180px", borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+        <div style={{ position: "absolute", right: "60px", bottom: "-40px", width: "120px", height: "120px", borderRadius: "50%", background: "rgba(74,222,128,0.06)" }} />
         <div style={{ position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontSize: "28px", fontWeight: "700", color: "white", margin: "0 0 12px" }}>¿Listo para crear tu portafolio?</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {["Es completamente gratis", "No necesitas tarjeta de crédito", "Listo en menos de 5 minutos"].map(item => (
-              <div key={item} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <CheckCircle2 size={15} color="#4ade80" />
-                <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.75)" }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 28px", background: "#16a34a", color: "white", textDecoration: "none", borderRadius: "12px", fontWeight: "700", fontSize: "15px", boxShadow: "0 4px 20px rgba(22,163,74,0.4)", position: "relative", zIndex: 1, whiteSpace: "nowrap" }}>
-          Empezar ahora — Es gratis <ArrowRight size={16} />
-        </Link>
-      </section>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", margin: "0 0 4px" }}>
+            Buenos días 👋
+          </p>
+          <h1 style={{ color: "white", fontSize: "24px", fontWeight: "700", margin: "0 0 6px" }}>
+            {profile?.first_name ?? "Estudiante"} {profile?.last_name}
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px", margin: "0 0 20px" }}>
+            Tienes <strong style={{ color: "#4ade80" }}>{totalRec}</strong> registros académicos
+            · <strong style={{ color: "#4ade80" }}>{totalDocs}</strong> documentos
+            · <strong style={{ color: "#4ade80" }}>{totalSkills}</strong> habilidades
+          </p>
 
-      {/* FOOTER */}
-      <footer style={{ background: "#111827", padding: "32px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "white", fontWeight: "800", fontSize: "14px" }}>S</span>
-          </div>
+          {/* Barra de progreso del perfil */}
           <div>
-            <p style={{ color: "white", fontWeight: "600", fontSize: "14px", margin: 0 }}>Smartfolio</p>
-            <p style={{ color: "#4b5563", fontSize: "11px", margin: 0 }}>BAN 00329 · UTS Bucaramanga</p>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+              <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "12px" }}>Perfil completado</span>
+              <span style={{ color: "#4ade80", fontSize: "12px", fontWeight: "600" }}>{completeness * 25}%</span>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: "99px", height: "6px" }}>
+              <div style={{ background: "#4ade80", borderRadius: "99px", height: "6px", width: `${completeness * 25}%`, transition: "width 0.5s ease" }} />
+            </div>
           </div>
         </div>
-        <p style={{ color: "#4b5563", fontSize: "12px", margin: 0, textAlign: "center" }}>
-          Nicolás Vega Ruiz · Juan Carlos Rúgeles Navarro<br />
-          <span style={{ color: "#374151" }}>Tecnología en Desarrollo de Sistemas Informáticos · UTS</span>
-        </p>
-        <p style={{ color: "#374151", fontSize: "12px", margin: 0 }}>© 2026 Smartfolio</p>
-      </footer>
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "24px" }}>
+        {[
+          { label: "Registros",   value: totalRec,    icon: BookOpen, color: "#16a34a", bg: "#f0fdf4", href: "/academic" },
+          { label: "Documentos",  value: totalDocs,   icon: FileText, color: "#2563eb", bg: "#eff6ff", href: "/documents" },
+          { label: "Habilidades", value: totalSkills, icon: Award,    color: "#7c3aed", bg: "#f5f3ff", href: "/skills" },
+          { label: "Completitud", value: `${completeness * 25}%`, icon: TrendingUp, color: "#d97706", bg: "#fffbeb", href: "/profile" },
+        ].map((s) => (
+          <Link key={s.label} href={s.href} style={{ textDecoration: "none" }}>
+            <div style={{
+              background: "white", borderRadius: "16px",
+              border: "1px solid #f0f0f0", padding: "18px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              display: "flex", alignItems: "center", gap: "14px",
+              transition: "box-shadow 0.2s",
+            }}>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <s.icon size={20} color={s.color} />
+              </div>
+              <div>
+                <p style={{ fontSize: "22px", fontWeight: "700", color: "#111827", margin: 0, lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: "12px", color: "#9ca3af", margin: "4px 0 0" }}>{s.label}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
+
+        {/* Panel izquierdo */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+          {/* Acciones rápidas */}
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#111827", margin: "0 0 14px" }}>Acciones rápidas</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {[
+                { href: "/academic/new", label: "Nuevo registro",  icon: Plus,    color: "#16a34a", bg: "#f0fdf4", desc: "Agrega un logro" },
+                { href: "/cv-builder",   label: "Generar CV",      icon: Palette, color: "#7c3aed", bg: "#f5f3ff", desc: "Descarga tu CV" },
+                { href: "/documents",    label: "Mis documentos",  icon: FileText,color: "#2563eb", bg: "#eff6ff", desc: `${totalDocs} archivos` },
+                { href: "/skills",       label: "Habilidades",     icon: Award,   color: "#d97706", bg: "#fffbeb", desc: `${totalSkills} registradas` },
+              ].map((a) => (
+                <Link key={a.href} href={a.href} style={{ textDecoration: "none" }}>
+                  <div style={{
+                    border: "1px solid #f0f0f0", borderRadius: "12px", padding: "14px",
+                    display: "flex", alignItems: "center", gap: "10px",
+                    transition: "all 0.15s",
+                  }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: a.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <a.icon size={17} color={a.color} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "13px", fontWeight: "600", color: "#111827", margin: 0 }}>{a.label}</p>
+                      <p style={{ fontSize: "11px", color: "#9ca3af", margin: 0 }}>{a.desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Formación por categoría */}
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#111827", margin: 0 }}>Formación académica</h2>
+              <Link href="/academic" style={{ fontSize: "12px", color: "#16a34a", textDecoration: "none", fontWeight: "600" }}>Ver todo →</Link>
+            </div>
+            {Object.keys(byType).length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <p style={{ fontSize: "32px", margin: "0 0 8px" }}>🎓</p>
+                <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 14px" }}>Aún no tienes registros académicos</p>
+                <Link href="/academic/new" style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "8px 16px", background: "#16a34a", color: "white",
+                  borderRadius: "10px", textDecoration: "none", fontSize: "13px", fontWeight: "600",
+                }}>
+                  <Plus size={14} /> Agregar primero
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px" }}>
+                {Object.entries(byType).map(([type, count]) => (
+                  <Link key={type} href={`/academic?type=${type}`} style={{ textDecoration: "none" }}>
+                    <div style={{
+                      background: "#fafafa", borderRadius: "12px", padding: "14px",
+                      border: "1px solid #f0f0f0", textAlign: "center",
+                    }}>
+                      <p style={{ fontSize: "24px", margin: "0 0 4px" }}>{RECORD_TYPE_ICONS[type as RecordType]}</p>
+                      <p style={{ fontSize: "20px", fontWeight: "700", color: "#111827", margin: "0 0 2px" }}>{count}</p>
+                      <p style={{ fontSize: "11px", color: "#9ca3af", margin: 0, lineHeight: "1.3" }}>{RECORD_TYPE_LABELS[type as RecordType]}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actividad reciente */}
+          {recent.length > 0 && (
+            <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#111827", margin: "0 0 14px" }}>Actividad reciente</h2>
+              <div>
+                {recent.map((r, i) => (
+                  <div key={r.id} style={{
+                    display: "flex", alignItems: "center", gap: "12px",
+                    padding: "10px 0",
+                    borderBottom: i < recent.length - 1 ? "1px solid #f8f8f8" : "none",
+                  }}>
+                    <span style={{ fontSize: "20px", flexShrink: 0 }}>{RECORD_TYPE_ICONS[r.record_type as RecordType]}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: "13px", fontWeight: "500", color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</p>
+                      <p style={{ fontSize: "11px", color: "#9ca3af", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.institution}</p>
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#d1d5db", flexShrink: 0 }}>{formatDateRelative(r.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Panel derecho */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+          {/* Portafolio público */}
+          <div style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", borderRadius: "16px", padding: "20px" }}>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>🌐 Tu portafolio público</p>
+            <p style={{ color: "white", fontSize: "13px", fontWeight: "600", margin: "0 0 4px", fontFamily: "monospace" }}>
+              /p/{profile?.username_slug}
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "11px", margin: "0 0 14px" }}>
+              Accesible sin iniciar sesión
+            </p>
+            <Link href={`/p/${profile?.username_slug}`} target="_blank" style={{
+              display: "block", textAlign: "center", padding: "9px",
+              background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: "10px", color: "white", textDecoration: "none",
+              fontSize: "13px", fontWeight: "600",
+            }}>
+              Ver mi portafolio →
+            </Link>
+          </div>
+
+          {/* Checklist */}
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <h2 style={{ fontSize: "14px", fontWeight: "700", color: "#111827", margin: "0 0 14px" }}>Lista de tareas</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {[
+                { label: "Completa tu perfil",          done: profileComplete, href: "/profile" },
+                { label: "Agrega tu título académico",   done: hasRecords,     href: "/academic/new" },
+                { label: "Sube un documento soporte",    done: hasDocs,        href: "/documents" },
+                { label: "Agrega tus habilidades",       done: totalSkills > 0, href: "/skills" },
+                { label: "Genera y descarga tu CV",      done: false,          href: "/cv-builder" },
+              ].map((item) => (
+                <Link key={item.label} href={item.done ? "#" : item.href} style={{ textDecoration: "none" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "8px 10px", borderRadius: "10px",
+                    background: item.done ? "#f0fdf4" : "#fafafa",
+                    border: `1px solid ${item.done ? "#bbf7d0" : "#f0f0f0"}`,
+                  }}>
+                    <div style={{
+                      width: "20px", height: "20px", borderRadius: "50%", flexShrink: 0,
+                      background: item.done ? "#16a34a" : "white",
+                      border: `2px solid ${item.done ? "#16a34a" : "#d1d5db"}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {item.done && <span style={{ color: "white", fontSize: "10px", fontWeight: "700" }}>✓</span>}
+                    </div>
+                    <span style={{ fontSize: "12px", color: item.done ? "#16a34a" : "#6b7280", fontWeight: item.done ? "500" : "400", textDecoration: item.done ? "line-through" : "none" }}>
+                      {item.label}
+                    </span>
+                    {!item.done && <ArrowRight size={12} color="#d1d5db" style={{ marginLeft: "auto" }} />}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS } from "@/types";
 import { formatDate } from "@/lib/utils";
 import type { Metadata } from "next";
-import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye, Mail } from "lucide-react";
 
 interface Props { params: Promise<{ username: string }> }
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data) return { title: "Portafolio no encontrado" };
   return {
     title: `${data.first_name} ${data.last_name} | Smartfolio`,
-    description: `Portafolio profesional de ${data.first_name} ${data.last_name} — generado con Smartfolio`,
+    description: `Portafolio profesional de ${data.first_name} ${data.last_name}`,
   };
 }
 
@@ -28,173 +28,188 @@ export default async function PublicPortfolioPage({ params }: Props) {
     .eq("portfolio_public", true).single();
   if (!profile) notFound();
 
-  // Contar visita y cargar datos en paralelo
   const [{ data: records }, { data: skills }] = await Promise.all([
-    supabase.from("academic_records").select("*")
-      .eq("profile_id", profile.id)
-      .eq("is_visible_in_cv", true)
-      .order("start_date", { ascending: false }),
-    supabase.from("skills").select("*")
-      .eq("profile_id", profile.id)
-      .order("sort_order"),
-    supabase.from("profiles")
-      .update({ visit_count: (profile.visit_count ?? 0) + 1 })
-      .eq("username_slug", username),
+    supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
+    supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
+    supabase.from("profiles").update({ visit_count: (profile.visit_count ?? 0) + 1 }).eq("username_slug", username),
   ]);
 
-  const byType = (records ?? []).reduce<Record<string, typeof records>>(
-    (acc, r) => { acc[r.record_type] = [...(acc[r.record_type] ?? []), r]; return acc; },
-    {}
-  );
+  const byType = (records ?? []).reduce<Record<string, typeof records>>((acc, r) => {
+    acc[r.record_type] = [...(acc[r.record_type] ?? []), r]; return acc;
+  }, {});
+
+  const skillsByCategory = (skills ?? []).reduce<Record<string, typeof skills>>((acc, s) => {
+    acc[s.category] = [...(acc[s.category] ?? []), s]; return acc;
+  }, {});
+
+  const categoryLabels: Record<string, string> = {
+    technical: "Técnicas", soft: "Blandas", language: "Idiomas", tool: "Herramientas",
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-10">
-          <div className="flex items-start gap-6 flex-wrap">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 overflow-hidden"
-              style={{ background: "#16a34a" }}>
-              {profile.photo_url
-                ? <img src={profile.photo_url} className="w-full h-full object-cover" alt="Foto" />
-                : `${profile.first_name?.charAt(0)}${profile.last_name?.charAt(0)}`}
+      {/* Navbar */}
+      <div style={{ background: "white", borderBottom: "1px solid #f0f0f0", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "28px", height: "28px", borderRadius: "7px", background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "white", fontWeight: "800", fontSize: "12px" }}>S</span>
+          </div>
+          <span style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>Smartfolio</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#9ca3af" }}>
+          <Eye size={13} />
+          <span>{(profile.visit_count ?? 0) + 1} visitas</span>
+        </div>
+      </div>
+
+      {/* Hero del perfil */}
+      <div style={{ background: "linear-gradient(135deg, #052e16, #166534)", padding: "40px 24px" }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto", display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+          <div style={{
+            width: "90px", height: "90px", borderRadius: "50%",
+            background: "rgba(255,255,255,0.15)", border: "3px solid rgba(255,255,255,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "white", fontWeight: "700", fontSize: "28px",
+            overflow: "hidden", flexShrink: 0,
+          }}>
+            {profile.photo_url
+              ? <img src={profile.photo_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Foto" />
+              : `${profile.first_name?.charAt(0)}${profile.last_name?.charAt(0)}`}
+          </div>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ color: "white", fontSize: "26px", fontWeight: "700", margin: "0 0 6px" }}>
+              {profile.first_name} {profile.last_name}
+            </h1>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "10px" }}>
+              {profile.city    && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><MapPin size={13} />{profile.city}, {profile.country}</span>}
+              {profile.phone   && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {profile.first_name} {profile.last_name}
-              </h1>
-              <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-gray-500">
-                {profile.city && (
-                  <span className="flex items-center gap-1">
-                    <MapPin size={14} /> {profile.city}, {profile.country}
-                  </span>
-                )}
-                {profile.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone size={14} /> {profile.phone}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-2 flex-wrap">
-                {profile.linkedin_url && (
-                  <a href={profile.linkedin_url} target="_blank"
-                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
-                    <LinkIcon size={14} /> LinkedIn
-                  </a>
-                )}
-                {profile.github_url && (
-                  <a href={profile.github_url} target="_blank"
-                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:underline">
-                    <LinkIcon size={14} /> GitHub
-                  </a>
-                )}
-                {profile.website_url && (
-                  <a href={profile.website_url} target="_blank"
-                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:underline">
-                    <Globe size={14} /> Sitio web
-                  </a>
-                )}
-              </div>
-              {profile.bio && (
-                <p className="text-sm text-gray-600 mt-3 leading-relaxed max-w-xl">{profile.bio}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {profile.linkedin_url && (
+                <a href={profile.linkedin_url} target="_blank" style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "white", textDecoration: "none", fontSize: "12px" }}>
+                  <LinkIcon size={12} /> LinkedIn
+                </a>
+              )}
+              {profile.github_url && (
+                <a href={profile.github_url} target="_blank" style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "white", textDecoration: "none", fontSize: "12px" }}>
+                  <LinkIcon size={12} /> GitHub
+                </a>
+              )}
+              {profile.website_url && (
+                <a href={profile.website_url} target="_blank" style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", color: "white", textDecoration: "none", fontSize: "12px" }}>
+                  <Globe size={12} /> Portafolio
+                </a>
               )}
             </div>
           </div>
         </div>
+        {profile.bio && (
+          <div style={{ maxWidth: "800px", margin: "16px auto 0" }}>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "14px", lineHeight: "1.7", margin: 0 }}>
+              {profile.bio}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Contenido principal */}
-      <div className="max-w-4xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Contenido */}
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: "20px" }}>
 
-        {/* Registros académicos */}
-        <div className="lg:col-span-2 space-y-5">
-          {Object.keys(byType).length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center text-gray-400">
-              Este portafolio aún no tiene registros académicos publicados.
-            </div>
-          ) : (
-            Object.entries(byType).map(([type, items]) => (
-              <div key={type} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100">
-                  <span>{RECORD_TYPE_ICONS[type as keyof typeof RECORD_TYPE_ICONS]}</span>
-                  <h2 className="font-semibold text-gray-800 text-sm">
-                    {RECORD_TYPE_LABELS[type as keyof typeof RECORD_TYPE_LABELS]}
-                  </h2>
-                  <span className="ml-auto text-xs text-gray-400">{items?.length}</span>
+          {/* Registros académicos */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {Object.keys(byType).length === 0 ? (
+              <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "40px", textAlign: "center", color: "#9ca3af" }}>
+                Sin registros académicos publicados aún.
+              </div>
+            ) : (
+              Object.entries(byType).map(([type, items]) => (
+                <div key={type} style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 18px", background: "#fafafa", borderBottom: "1px solid #f0f0f0" }}>
+                    <span style={{ fontSize: "18px" }}>{RECORD_TYPE_ICONS[type as keyof typeof RECORD_TYPE_ICONS]}</span>
+                    <h2 style={{ fontSize: "14px", fontWeight: "700", color: "#111827", margin: 0 }}>
+                      {RECORD_TYPE_LABELS[type as keyof typeof RECORD_TYPE_LABELS]}
+                    </h2>
+                    <span style={{ marginLeft: "auto", fontSize: "11px", color: "#9ca3af", background: "#f0f0f0", padding: "2px 8px", borderRadius: "99px" }}>{items?.length}</span>
+                  </div>
+                  <div>
+                    {items?.map((r, i) => (
+                      <div key={r.id} style={{
+                        padding: "14px 18px",
+                        borderBottom: i < (items?.length ?? 0) - 1 ? "1px solid #f8f8f8" : "none",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "14px", fontWeight: "600", color: "#111827", margin: "0 0 3px" }}>{r.title}</p>
+                            <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 4px" }}>{r.institution}</p>
+                            {r.description && <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0, lineHeight: "1.5" }}>{r.description}</p>}
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "0 0 4px" }}>
+                              {formatDate(r.start_date, "MMM yyyy")}
+                              {r.end_date ? ` — ${formatDate(r.end_date, "MMM yyyy")}` : ""}
+                            </p>
+                            {r.credential_url && (
+                              <a href={r.credential_url} target="_blank" style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "11px", color: "#16a34a", textDecoration: "none" }}>
+                                Verificar <ExternalLink size={10} />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {items?.map((r) => (
-                    <div key={r.id} className="px-5 py-3">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-gray-900">{r.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{r.institution}</p>
-                          {r.description && (
-                            <p className="text-xs text-gray-400 mt-1">{r.description}</p>
-                          )}
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-gray-400">
-                            {formatDate(r.start_date, "MMM yyyy")}
-                            {r.end_date ? ` — ${formatDate(r.end_date, "MMM yyyy")}` : ""}
-                          </p>
-                          {r.credential_url && (
-                            <a href={r.credential_url} target="_blank"
-                              className="text-xs text-blue-600 flex items-center justify-end gap-0.5 mt-1 hover:underline">
-                              Verificar <ExternalLink size={10} />
-                            </a>
-                          )}
-                        </div>
+              ))
+            )}
+          </div>
+
+          {/* Sidebar derecho */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+            {/* Habilidades */}
+            {Object.keys(skillsByCategory).length > 0 && (
+              <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <h2 style={{ fontSize: "13px", fontWeight: "700", color: "#111827", margin: "0 0 12px" }}>Habilidades</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {Object.entries(skillsByCategory).map(([cat, list]) => (
+                    <div key={cat}>
+                      <p style={{ fontSize: "10px", fontWeight: "600", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 6px" }}>
+                        {categoryLabels[cat] ?? cat}
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        {list?.map((s) => (
+                          <span key={s.id} style={{
+                            fontSize: "11px", padding: "3px 9px",
+                            background: "#f0fdf4", color: "#16a34a",
+                            borderRadius: "99px", border: "1px solid #bbf7d0",
+                            fontWeight: "500",
+                          }}>
+                            {s.name}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            )}
 
-        {/* Sidebar derecho */}
-        <div className="space-y-4">
-
-          {/* Contador de visitas */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Eye size={16} className="text-gray-400" />
-              <p className="text-2xl font-bold text-gray-900">
-                {(profile.visit_count ?? 0) + 1}
-              </p>
+            {/* Smartfolio badge */}
+            <div style={{ background: "linear-gradient(135deg, #052e16, #166534)", borderRadius: "16px", padding: "16px", textAlign: "center" }}>
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "11px", margin: "0 0 4px" }}>Portafolio generado con</p>
+              <p style={{ color: "white", fontWeight: "700", fontSize: "16px", margin: "0 0 2px" }}>Smartfolio</p>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "10px", margin: "0 0 12px" }}>BAN 00329 · UTS Bucaramanga</p>
+              <a href="/register" style={{
+                display: "block", padding: "8px", background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.2)", borderRadius: "10px",
+                color: "white", textDecoration: "none", fontSize: "12px", fontWeight: "600",
+              }}>
+                Crea el tuyo gratis →
+              </a>
             </div>
-            <p className="text-xs text-gray-500">visitas al portafolio</p>
           </div>
-
-          {/* Habilidades */}
-          {skills && skills.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-              <h2 className="font-semibold text-gray-900 text-sm mb-3">Habilidades</h2>
-              <div className="flex flex-wrap gap-1.5">
-                {skills.map((s) => (
-                  <span key={s.id}
-                    className="text-xs px-2.5 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Badge Smartfolio */}
-          <div className="bg-green-50 rounded-2xl border border-green-100 p-5 text-center">
-            <p className="text-xs text-green-700 mb-2">Portafolio generado con</p>
-            <p className="font-bold text-green-800">Smartfolio</p>
-            <p className="text-xs text-green-600 mt-1">BAN 00329 · UTS Bucaramanga</p>
-            <a href="/register"
-              className="mt-3 inline-block text-xs text-green-700 underline">
-              Crea el tuyo gratis →
-            </a>
-          </div>
-
         </div>
       </div>
     </div>
