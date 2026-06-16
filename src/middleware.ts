@@ -25,8 +25,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthRoute  = ["/login","/register"].some(r => pathname.startsWith(r));
-  const isDashRoute  = ["/dashboard","/profile","/academic","/documents","/cv-builder","/settings"].some(r => pathname.startsWith(r));
+  const isDashRoute = ["/dashboard","/profile","/academic","/documents","/cv-builder","/settings","/skills"].some(r => pathname.startsWith(r));
   const isAdminRoute = pathname.startsWith("/admin");
+  
 
   if (!user && (isDashRoute || isAdminRoute))
     return NextResponse.redirect(new URL("/login", request.url));
