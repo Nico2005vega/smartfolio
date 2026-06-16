@@ -140,7 +140,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
             <p style={{ fontWeight: "600", fontSize: "14px", color: "#111827", margin: 0 }}>
               {firstName} {lastName}
             </p>
-            <p style={{ fontSize: "12px", color: "#6b7280", margin: 0, truncate: true }}>
+           <p style={{ fontSize: "12px", color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {plan === "premium" ? "⭐ Premium" : "Plan Gratuito"}
             </p>
           </div>
