@@ -1,7 +1,7 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { LogOut, Bell, Menu } from "lucide-react";
+import { Bell } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import type { Profile } from "@/types";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ interface TopBarProps { profile: Profile | null; }
 
 export default function TopBar({ profile }: TopBarProps) {
   const supabase = createClient();
-  const router = useRouter();
+  const router   = useRouter();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -24,40 +24,52 @@ export default function TopBar({ profile }: TopBarProps) {
     : "US";
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
-      <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
-        <Menu size={20} className="text-gray-600" />
-      </button>
+    <header style={{
+      background: "white", borderBottom: "1px solid #f0f0f0",
+      padding: "12px 20px", display: "flex",
+      alignItems: "center", justifyContent: "space-between",
+      position: "sticky", top: 0, zIndex: 30,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    }}>
+      {/* Espacio para el botón hamburguesa en móvil */}
+      <div style={{ width: "48px" }} className="lg:hidden" />
 
+      {/* Spacer en desktop */}
       <div className="hidden lg:block" />
 
-      <div className="flex items-center gap-3">
-        <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-          <Bell size={18} className="text-gray-500" />
+      {/* Derecha */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <button style={{
+          padding: "8px", borderRadius: "10px", background: "none",
+          border: "none", cursor: "pointer",
+        }}>
+          <Bell size={18} color="#9ca3af" />
         </button>
 
-        <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
-            style={{background:"#16a34a"}}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          paddingLeft: "12px", borderLeft: "1px solid #f0f0f0",
+        }}>
+          <div style={{
+            width: "34px", height: "34px", borderRadius: "50%",
+            background: "#16a34a", display: "flex",
+            alignItems: "center", justifyContent: "center",
+            color: "white", fontSize: "13px", fontWeight: "700",
+            overflow: "hidden", flexShrink: 0, cursor: "pointer",
+          }}>
             {profile?.photo_url
-              ? <img src={profile.photo_url} className="w-full h-full rounded-full object-cover" alt="avatar" />
+              ? <img src={profile.photo_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
               : initials}
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-gray-900 leading-none">
+            <p style={{ fontSize: "13px", fontWeight: "600", color: "#111827", margin: 0, lineHeight: 1 }}>
               {profile?.first_name} {profile?.last_name}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p style={{ fontSize: "11px", color: "#9ca3af", margin: "2px 0 0" }}>
               {profile?.plan === "premium" ? "⭐ Premium" : "Plan Gratuito"}
             </p>
           </div>
         </div>
-
-        <button onClick={handleLogout}
-          className="p-2 rounded-lg hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
-          title="Cerrar sesión">
-          <LogOut size={17} />
-        </button>
       </div>
     </header>
   );
