@@ -23,10 +23,12 @@ const CATEGORY_CONFIG: Record<SkillCategory, {
   tool:      { bg:"#fff7ed", text:"#9a3412", border:"#fed7aa", icon:<Wrench size={13}/> },
 };
 
-// Barra de nivel: beginner 25 · intermediate 50 · advanced 75 · expert 100
-const LEVEL_PCT: Partial<Record<SkillLevel, number>> = {
-  beginner: 25, intermediate: 50, advanced: 75, expert: 100,
-};
+// Porcentajes calculados desde tus propios SkillLevel (sin hardcodear nombres)
+const LEVEL_PCT: Record<string, number> = Object.fromEntries(
+  Object.keys(SKILL_LEVEL_LABELS).map((key, i, arr) => [
+    key, Math.round(((i + 1) / arr.length) * 100),
+  ])
+);
 
 export default function SkillsManager({ profileId, initialSkills }: Props) {
   const [skills,         setSkills]         = useState<Skill[]>(initialSkills);
@@ -137,7 +139,7 @@ export default function SkillsManager({ profileId, initialSkills }: Props) {
         )}
 
         {filtered.map((skill) => {
-          const pct = skill.level ? (LEVEL_PCT[skill.level] ?? 0) : null;
+          const pct = skill.level ? (LEVEL_PCT[skill.level as string] ?? 0) : null;
           return (
             <div key={skill.id}
               className="group flex items-start gap-3 p-3.5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
