@@ -1,13 +1,21 @@
+// src/app/(dashboard)/cv-builder/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import CVBuilderWrapper from "./CVBuilderWrapper";
 
-export const metadata = { title: "Generar CV" };
+export const metadata = { title: "Generador de CV · Smartfolio" };
 
-export default async function CVBuilderPage() {
+interface PageProps {
+  searchParams: Promise<{ template?: string }>;
+}
+
+export default async function CVBuilderPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const params = await searchParams;
+  const preSelectedTemplate = params?.template;
 
   const [
     { data: profile },
@@ -17,10 +25,15 @@ export default async function CVBuilderPage() {
     { data: config },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase.from("academic_records").select("*, document:documents(file_name,public_url)").eq("profile_id", user.id),
+    supabase.from("academic_records")
+      .select("*, document:documents(file_name,public_url)")
+      .eq("profile_id", user.id),
     supabase.from("skills").select("*").eq("profile_id", user.id).order("sort_order"),
     supabase.from("cv_templates").select("*").eq("is_active", true),
-    supabase.from("cv_configurations").select("*, template:cv_templates(*)").eq("profile_id", user.id).single(),
+    supabase.from("cv_configurations")
+      .select("*, template:cv_templates(*)")
+      .eq("profile_id", user.id)
+      .single(),
   ]);
 
   return (
@@ -30,6 +43,7 @@ export default async function CVBuilderPage() {
       skills={skills ?? []}
       templates={templates ?? []}
       config={config}
+      preSelectedTemplate={preSelectedTemplate}
     />
   );
 }

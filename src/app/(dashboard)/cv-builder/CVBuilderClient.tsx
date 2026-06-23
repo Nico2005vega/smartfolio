@@ -24,20 +24,21 @@ const CVPreviewMinimal   = dynamic(() => import("@/components/cv-templates/CVPre
 const CVPreviewTech      = dynamic(() => import("@/components/cv-templates/CVPreviewTech"),      { ssr:false });
 
 interface Props {
-  profile:   Profile | null;
-  records:   AcademicRecord[];
-  skills:    Skill[];
-  templates: CVTemplate[];
-  config:    CVConfiguration | null;
+  profile:              Profile | null;
+  records:              AcademicRecord[];
+  skills:               Skill[];
+  templates:            CVTemplate[];
+  config:               CVConfiguration | null;
+  preSelectedTemplate?: string;
 }
 
 const REGISTRY: CVTemplate[] = [
-  { id:"t1", name:"Moderna",     description:"Sidebar con foto y acento de color",         template_key:"modern",    is_active:true, is_premium:false, preview_url:null },
-  { id:"t2", name:"Clásica",     description:"Encabezado centrado, formato tradicional",    template_key:"classic",   is_active:true, is_premium:false, preview_url:null },
-  { id:"t3", name:"Ejecutiva",   description:"Minimalista, tipografía en protagonismo",     template_key:"executive", is_active:true, is_premium:false, preview_url:null },
-  { id:"t4", name:"Creativa",    description:"Header bold + sidebar de habilidades",        template_key:"creative",  is_active:true, is_premium:false, preview_url:null },
-  { id:"t5", name:"Minimalista", description:"Serif elegante, espacios amplios",            template_key:"minimal",   is_active:true, is_premium:false, preview_url:null },
-  { id:"t6", name:"Tecnológica", description:"Sidebar oscuro, estilo código/dev",           template_key:"tech",      is_active:true, is_premium:false, preview_url:null },
+  { id:"t1", name:"Moderna",     description:"Sidebar con foto y acento de color",      template_key:"modern",    is_active:true, is_premium:false, preview_url:null },
+  { id:"t2", name:"Clásica",     description:"Encabezado centrado, formato tradicional", template_key:"classic",   is_active:true, is_premium:false, preview_url:null },
+  { id:"t3", name:"Ejecutiva",   description:"Minimalista, tipografía en protagonismo",  template_key:"executive", is_active:true, is_premium:false, preview_url:null },
+  { id:"t4", name:"Creativa",    description:"Header bold + sidebar de habilidades",     template_key:"creative",  is_active:true, is_premium:false, preview_url:null },
+  { id:"t5", name:"Minimalista", description:"Serif elegante, espacios amplios",         template_key:"minimal",   is_active:true, is_premium:false, preview_url:null },
+  { id:"t6", name:"Tecnológica", description:"Sidebar oscuro, estilo código/dev",        template_key:"tech",      is_active:true, is_premium:false, preview_url:null },
 ];
 
 const PALETTES = [
@@ -47,7 +48,6 @@ const PALETTES = [
 
 type Tab = "plantilla" | "estilo" | "diseno" | "secciones";
 
-/* ── Filled-track range slider ───────────────────────────── */
 function Slider({
   min, max, step = 1, value, onChange, label, format,
 }: {
@@ -65,13 +65,10 @@ function Slider({
       </div>
       <div className="relative py-2">
         <input
-          type="range"
-          min={min} max={max} step={step} value={value}
+          type="range" min={min} max={max} step={step} value={value}
           onChange={e => onChange(Number(e.target.value))}
           className="w-full h-2 rounded-full appearance-none cursor-pointer outline-none"
-          style={{
-            background: `linear-gradient(to right, #16a34a ${pct}%, #e5e7eb ${pct}%)`,
-          }}
+          style={{ background:`linear-gradient(to right, #16a34a ${pct}%, #e5e7eb ${pct}%)` }}
         />
       </div>
       <div className="flex justify-between">
@@ -82,26 +79,17 @@ function Slider({
   );
 }
 
-/* ── Toggle ──────────────────────────────────────────────── */
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={cn(
-        "relative w-11 h-6 rounded-full transition-colors flex-shrink-0 focus:outline-none",
-        checked ? "bg-green-500" : "bg-gray-200"
-      )}
-    >
-      <span className={cn(
-        "absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
-        checked ? "translate-x-6" : "translate-x-1"
-      )}/>
+    <button type="button" onClick={() => onChange(!checked)}
+      className={cn("relative w-11 h-6 rounded-full transition-colors flex-shrink-0 focus:outline-none",
+        checked ? "bg-green-500" : "bg-gray-200")}>
+      <span className={cn("absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
+        checked ? "translate-x-6" : "translate-x-1")}/>
     </button>
   );
 }
 
-/* ── Template thumbnails ─────────────────────────────────── */
 function Thumb({ k, color }: { k: string; color: string }) {
   const c = color;
   switch (k) {
@@ -148,7 +136,7 @@ function Thumb({ k, color }: { k: string; color: string }) {
         {[33,43,53,63,73].map((y,i)=>(
           <rect key={y} x="14" y={y} width={36-(i%3)*5} height="2.5" fill="#e2e8f0" rx="1"/>
         ))}
-        <rect x="57" y="28" width="18" height="64" fill="#f1f5f9" rx="0"/>
+        <rect x="57" y="28" width="18" height="64" fill="#f1f5f9"/>
         {[30,37,44,51,58,65,72,79].map(y=>(
           <rect key={y} x="59" y={y} width="12" height="1.5" fill="#cbd5e1" rx="1"/>
         ))}
@@ -183,24 +171,23 @@ function Thumb({ k, color }: { k: string; color: string }) {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-export default function CVBuilderClient({ profile, records, skills, templates, config }: Props) {
+export default function CVBuilderClient({
+  profile, records, skills, templates, config, preSelectedTemplate,
+}: Props) {
 
-  /* State */
-  const [tplKey,        setTplKey]      = useState(config?.template?.template_key ?? "modern");
-  const [tab,           setTab]         = useState<Tab>("plantilla");
-  const [saving,        setSaving]      = useState(false);
+  const [tplKey, setTplKey] = useState(
+    preSelectedTemplate ?? config?.template?.template_key ?? templates[0]?.template_key ?? "modern"
+  );
+  const [tab,    setTab]    = useState<Tab>("plantilla");
+  const [saving, setSaving] = useState(false);
   const supabase = createClient();
 
-  /* Colour */
-  const [accent, setAccent] = useState(config?.accent_color ?? "#059669");
+  const [accent,     setAccent] = useState(config?.accent_color ?? "#059669");
+  const [fontFamily, setFont]   = useState<"sans"|"serif"|"mono">("sans");
+  const [fontSize,   setFSize]  = useState(13);
+  const [lineHeight, setLH]     = useState(1.55);
+  const [uppercase,  setUpper]  = useState(false);
 
-  /* Typography */
-  const [fontFamily, setFont]  = useState<"sans"|"serif"|"mono">("sans");
-  const [fontSize,   setFSize] = useState(13);
-  const [lineHeight, setLH]    = useState(1.55);
-  const [uppercase,  setUpper] = useState(false);
-
-  /* Design */
   const [photoShape,   setPhotoShape]   = useState<"circle"|"rounded"|"square">("circle");
   const [sectionStyle, setSectionStyle] = useState<"underline"|"left-bar"|"filled"|"minimal">("underline");
   const [skillsStyle,  setSkillsStyle]  = useState<"chips"|"dots"|"bars"|"text">("chips");
@@ -208,11 +195,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const [showPhoto,    setShowPhoto]    = useState(true);
   const [showIcons,    setShowIcons]    = useState(true);
 
-  /* Sections */
   const [hidden, setHidden] = useState<Set<RecordType>>(new Set());
 
-  /* Merged template list */
-  const allTpls = REGISTRY.map(st => (templates ?? []).find(t => t.template_key === st.template_key) ?? st);
+  const allTpls    = REGISTRY.map(st => (templates ?? []).find(t => t.template_key === st.template_key) ?? st);
   const currentTpl = allTpls.find(t => t.template_key === tplKey) ?? allTpls[0];
 
   if (!profile) return (
@@ -225,7 +210,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     </div>
   );
 
-  /* Build CV data — includes all customisation */
   const filteredRecords = records.filter(r => !hidden.has(r.record_type));
 
   const extConfig = useMemo(() => ({
@@ -235,7 +219,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     }),
     accent_color:  accent,
     template:      currentTpl,
-    // Extended options (read by Preview components via `config as any`)
     font_family:   fontFamily,
     font_size:     fontSize,
     line_height:   lineHeight,
@@ -247,10 +230,8 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     show_icons:    showIcons,
     uppercase:     uppercase,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [
-    config, accent, currentTpl, fontFamily, fontSize, lineHeight,
-    photoShape, sectionStyle, skillsStyle, cardStyle, showPhoto, showIcons, uppercase,
-  ]);
+  }), [config, accent, currentTpl, fontFamily, fontSize, lineHeight,
+       photoShape, sectionStyle, skillsStyle, cardStyle, showPhoto, showIcons, uppercase]);
 
   const cvData = useMemo(
     () => generateCVData(profile, filteredRecords, skills, extConfig as CVConfiguration),
@@ -261,7 +242,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const visibleRecs  = records.filter(r => r.is_visible_in_cv && !hidden.has(r.record_type));
   const sectionTypes = [...new Set(records.filter(r => r.is_visible_in_cv).map(r => r.record_type))];
 
-  /* Actions */
   const save = async () => {
     setSaving(true);
     await supabase.from("cv_configurations").upsert({
@@ -277,7 +257,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     toast.success("¡Enlace copiado! 🔗");
   };
 
-  /* Preview switch */
   const renderPreview = () => {
     const p = { data: cvData };
     switch (tplKey) {
@@ -290,7 +269,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     }
   };
 
-  /* ─ Shared UI bits ─ */
   const STitle = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
     <div className="flex items-center gap-2 mb-3">
       <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 text-[10px]">
@@ -302,7 +280,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
 
   const Divider = () => <div className="border-t border-gray-100 my-4"/>;
 
-  /* ═══════════════════════════════════════════════════════ */
   return (
     <div className="max-w-7xl mx-auto">
 
@@ -334,10 +311,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
         </div>
       </div>
 
-      {/* Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-5">
 
-        {/* ═══ SIDE PANEL ══════════════════════════════════ */}
+        {/* ═══ SIDE PANEL ═══ */}
         <aside>
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
 
@@ -360,10 +336,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
               ))}
             </div>
 
-            {/* Panel content */}
             <div className="p-4 space-y-4 max-h-[72vh] overflow-y-auto">
 
-              {/* ══ PLANTILLA ══════════════════════════════ */}
+              {/* ── PLANTILLA ── */}
               {tab === "plantilla" && (
                 <>
                   <p className="text-[11px] text-gray-400 font-medium">Selecciona el diseño de tu CV:</p>
@@ -396,10 +371,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                 </>
               )}
 
-              {/* ══ ESTILO ═════════════════════════════════ */}
+              {/* ── ESTILO ── */}
               {tab === "estilo" && (
                 <>
-                  {/* Color */}
                   <STitle icon={<Palette size={10}/>} text="Color de acento"/>
                   <div className="grid grid-cols-6 gap-2">
                     {PALETTES.map(hex => (
@@ -418,7 +392,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                     ))}
                   </div>
 
-                  {/* Custom color */}
                   <div className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-2xl">
                     <input type="color" value={accent} onChange={e => setAccent(e.target.value)}
                       className="w-9 h-9 rounded-xl cursor-pointer border-0 bg-transparent flex-shrink-0"
@@ -436,14 +409,12 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </div>
 
                   <Divider/>
-
-                  {/* Typography */}
                   <STitle icon={<span className="font-bold">Aa</span>} text="Tipografía"/>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { key:"sans",  face:"system-ui,sans-serif",       label:"Sans",    sub:"Moderno"   },
-                      { key:"serif", face:"Georgia,serif",              label:"Serif",   sub:"Elegante"  },
-                      { key:"mono",  face:"'Courier New',monospace",    label:"Mono",    sub:"Técnico"   },
+                      { key:"sans",  face:"system-ui,sans-serif",    label:"Sans",  sub:"Moderno"  },
+                      { key:"serif", face:"Georgia,serif",           label:"Serif", sub:"Elegante" },
+                      { key:"mono",  face:"'Courier New',monospace", label:"Mono",  sub:"Técnico"  },
                     ].map(({ key, face, label, sub }) => (
                       <button key={key} onClick={() => setFont(key as any)}
                         className={cn(
@@ -458,46 +429,26 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </div>
 
                   <Divider/>
-
-                  {/* Font size slider */}
-                  <Slider
-                    min={10} max={16} step={0.5}
-                    value={fontSize}
-                    onChange={setFSize}
-                    label="Tamaño de fuente"
-                    format={v => `${v}px`}
-                  />
-
+                  <Slider min={10} max={16} step={0.5} value={fontSize} onChange={setFSize}
+                    label="Tamaño de fuente" format={v => `${v}px`}/>
+                  <Divider/>
+                  <Slider min={1.2} max={2.0} step={0.05} value={lineHeight} onChange={setLH}
+                    label="Interlineado" format={v => `${v.toFixed(2)}×`}/>
                   <Divider/>
 
-                  {/* Line height slider */}
-                  <Slider
-                    min={1.2} max={2.0} step={0.05}
-                    value={lineHeight}
-                    onChange={setLH}
-                    label="Interlineado"
-                    format={v => `${v.toFixed(2)}×`}
-                  />
-
-                  <Divider/>
-
-                  {/* Uppercase toggle */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
                     <div>
                       <p className="text-xs font-semibold text-gray-700">Nombre en MAYÚSCULAS</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        {uppercase ? "JUAN PÉREZ" : "Juan Pérez"}
-                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{uppercase ? "JUAN PÉREZ" : "Juan Pérez"}</p>
                     </div>
                     <Toggle checked={uppercase} onChange={setUpper}/>
                   </div>
                 </>
               )}
 
-              {/* ══ DISEÑO ═════════════════════════════════ */}
+              {/* ── DISEÑO ── */}
               {tab === "diseno" && (
                 <>
-                  {/* Photo */}
                   <div className="flex items-center justify-between mb-1">
                     <STitle icon={<User size={10}/>} text="Foto de perfil"/>
                     <Toggle checked={showPhoto} onChange={setShowPhoto}/>
@@ -505,9 +456,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   {showPhoto && (
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { key:"circle",  label:"Círculo",    radius:"50%" },
+                        { key:"circle",  label:"Círculo",    radius:"50%"  },
                         { key:"rounded", label:"Redondeado", radius:"10px" },
-                        { key:"square",  label:"Cuadrado",   radius:"2px" },
+                        { key:"square",  label:"Cuadrado",   radius:"2px"  },
                       ].map(({ key, label, radius }) => (
                         <button key={key} onClick={() => setPhotoShape(key as any)}
                           className={cn(
@@ -525,8 +476,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   )}
 
                   <Divider/>
-
-                  {/* Section style */}
                   <STitle icon={<Minus size={10}/>} text="Estilo de secciones"/>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -558,17 +507,13 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                           "rounded-2xl border-2 overflow-hidden text-left transition-all hover:shadow-sm",
                           sectionStyle === key ? "border-green-500" : "border-gray-100 hover:border-gray-200"
                         )}>
-                        <div className="bg-gray-50 min-h-[40px] border-b border-gray-100">
-                          {render(accent)}
-                        </div>
+                        <div className="bg-gray-50 min-h-[40px] border-b border-gray-100">{render(accent)}</div>
                         <p className="text-[10px] font-semibold text-gray-600 p-2">{label}</p>
                       </button>
                     ))}
                   </div>
 
                   <Divider/>
-
-                  {/* Skills style */}
                   <STitle icon={<Tag size={10}/>} text="Visualización de habilidades"/>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -613,24 +558,20 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                           "rounded-2xl border-2 overflow-hidden text-left transition-all hover:shadow-sm",
                           skillsStyle === key ? "border-green-500" : "border-gray-100 hover:border-gray-200"
                         )}>
-                        <div className="bg-gray-50 min-h-[48px] border-b border-gray-100">
-                          {render(accent)}
-                        </div>
+                        <div className="bg-gray-50 min-h-[48px] border-b border-gray-100">{render(accent)}</div>
                         <p className="text-[10px] font-semibold text-gray-600 p-2">{label}</p>
                       </button>
                     ))}
                   </div>
 
                   <Divider/>
-
-                  {/* Card style */}
                   <STitle icon={<BarChart2 size={10}/>} text="Estilo de entradas"/>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { key:"flat",     label:"Simple",    bg:"white",   border:"transparent", shadow:"none" },
-                      { key:"shadow",   label:"Con sombra",bg:"white",   border:"transparent", shadow:"0 1px 4px rgba(0,0,0,.1)" },
-                      { key:"bordered", label:"Bordes",    bg:"white",   border:"#e5e7eb",     shadow:"none" },
-                      { key:"accent",   label:"Acento",    bg:"",        border:"",            shadow:"none" },
+                      { key:"flat",     label:"Simple",     bg:"white", border:"transparent",  shadow:"none" },
+                      { key:"shadow",   label:"Con sombra", bg:"white", border:"transparent",  shadow:"0 1px 4px rgba(0,0,0,.1)" },
+                      { key:"bordered", label:"Bordes",     bg:"white", border:"#e5e7eb",      shadow:"none" },
+                      { key:"accent",   label:"Acento",     bg:"",      border:"",             shadow:"none" },
                     ].map(({ key, label, bg, border, shadow }) => (
                       <button key={key} onClick={() => setCardStyle(key as any)}
                         className={cn(
@@ -652,8 +593,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </div>
 
                   <Divider/>
-
-                  {/* Icons toggle */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
                     <div>
                       <p className="text-xs font-semibold text-gray-700">Íconos en secciones</p>
@@ -664,7 +603,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                 </>
               )}
 
-              {/* ══ SECCIONES ══════════════════════════════ */}
+              {/* ── SECCIONES ── */}
               {tab === "secciones" && (
                 <>
                   <div className="flex items-center justify-between mb-2">
@@ -709,15 +648,15 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                 </>
               )}
 
-            </div>{/* /scroll */}
+            </div>
           </div>
 
           {/* Bottom stats */}
           <div className="mt-3 grid grid-cols-3 gap-2">
             {[
-              { v: currentTpl?.name ?? "—",                             l: "Plantilla"   },
-              { v: `${sectionTypes.length - hidden.size}/${sectionTypes.length}`, l: "Secciones" },
-              { v: String(skills.length),                               l: "Habilidades" },
+              { v: currentTpl?.name ?? "—",                                              l:"Plantilla"   },
+              { v: `${sectionTypes.length - hidden.size}/${sectionTypes.length}`,        l:"Secciones"  },
+              { v: String(skills.length),                                                l:"Habilidades" },
             ].map(({ v, l }) => (
               <div key={l} className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm">
                 <p className="text-sm font-bold text-gray-800 truncate">{v}</p>
@@ -727,9 +666,8 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
           </div>
         </aside>
 
-        {/* ═══ PREVIEW ════════════════════════════════════ */}
+        {/* ═══ PREVIEW ═══ */}
         <div className="flex flex-col min-h-0">
-          {/* Toolbar */}
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <Eye size={12}/> Vista previa en tiempo real
@@ -742,9 +680,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
             </div>
           </div>
 
-          {/* Preview frame */}
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl p-5 flex-1 min-h-[640px] border border-gray-200 shadow-inner">
-            <div key={`${tplKey}-${accent}-${fontFamily}-${fontSize}-${lineHeight}-${photoShape}-${sectionStyle}-${skillsStyle}-${cardStyle}-${uppercase}`}
+            <div
+              key={`${tplKey}-${accent}-${fontFamily}-${fontSize}-${lineHeight}-${photoShape}-${sectionStyle}-${skillsStyle}-${cardStyle}-${uppercase}`}
               className="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px] transition-all">
               {renderPreview()}
             </div>
