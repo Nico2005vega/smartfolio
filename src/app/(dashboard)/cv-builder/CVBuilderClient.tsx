@@ -111,7 +111,6 @@ const REGISTRY: CVTemplate[] = CATALOGUE.map((t,i) => ({
 
 type Tab = "plantilla"|"fuentes"|"estilo"|"diseno"|"secciones";
 
-/* ── SVG Thumbnails ─────────────────────────────────────── */
 function Thumb({ k, c }: { k:string; c:string }) {
   const col = CATALOGUE.find(t=>t.key===k)?.accent ?? c;
   switch (k) {
@@ -131,7 +130,6 @@ function Thumb({ k, c }: { k:string; c:string }) {
   }
 }
 
-/* ── Gallery Modal ──────────────────────────────────────── */
 function GalleryModal({ currentKey, onSelect, onClose }: {
   currentKey:string; onSelect:(key:string)=>void; onClose:()=>void;
 }) {
@@ -240,7 +238,6 @@ function GalleryModal({ currentKey, onSelect, onClose }: {
   );
 }
 
-/* ── Slider ─────────────────────────────────────────────── */
 function Slider({ min, max, step=1, value, onChange, label, format }:{
   min:number;max:number;step?:number;value:number;onChange:(v:number)=>void;label:string;format:(v:number)=>string;
 }) {
@@ -271,7 +268,6 @@ function Toggle({ checked, onChange }:{ checked:boolean; onChange:(v:boolean)=>v
   );
 }
 
-/* ═══════════════════════════════════════════════════════════ */
 interface Props {
   profile:Profile|null; records:AcademicRecord[]; skills:Skill[];
   templates:CVTemplate[]; config:CVConfiguration|null; preSelectedTemplate?:string;
@@ -284,7 +280,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const [galleryOpen, setGalleryOpen] = useState(false);
   const supabase = createClient();
 
-  /* Cargar Google Fonts via DOM — evita problemas de hidratación */
   useEffect(()=>{
     const id="smartfolio-gfonts";
     if(document.getElementById(id)) return;
@@ -386,7 +381,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
       )}
 
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Generador de CV</h1>
@@ -406,7 +400,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
         <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-5">
           <aside>
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              {/* Tabs */}
               <div className="flex p-1.5 gap-0.5 bg-gray-50/80 border-b border-gray-100">
                 {([
                   {id:"plantilla",label:"Plantilla", icon:<Layout size={10}/>},
@@ -425,7 +418,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
 
               <div className="p-4 space-y-4 max-h-[72vh] overflow-y-auto">
 
-                {/* ── PLANTILLA ── */}
                 {tab==="plantilla" && (
                   <>
                     <button onClick={()=>setGalleryOpen(true)}
@@ -452,12 +444,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {/* ── FUENTES ── */}
                 {tab==="fuentes" && (
                   <>
                     <STitle icon={<Type size={10}/>} text="Familia tipográfica"/>
-
-                    {/* Filtro de categoría */}
                     <div className="flex gap-1.5 mb-3">
                       {(["Todos","Sans","Serif","Mono"] as const).map(cat=>(
                         <button key={cat} onClick={()=>setFontCat(cat)}
@@ -467,30 +456,15 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         </button>
                       ))}
                     </div>
-
-                    {/* Fuentes — cada una muestra texto en su propia tipografía */}
                     <div className="space-y-2">
                       {filteredFonts.map(f=>(
-                        <button key={f.name}
-                          onClick={()=>{setFontName(f.name);setFontFamily(f.family);}}
-                          className={cn(
-                            "w-full text-left rounded-2xl border-2 overflow-hidden transition-all",
-                            fontName===f.name
-                              ? "border-green-500 shadow-sm"
-                              : "border-gray-100 hover:border-gray-200 hover:shadow-sm"
-                          )}>
-                          {/* Preview real en la fuente */}
-                          <div
-                            className={cn("px-4 py-3", fontName===f.name?"bg-green-50":"bg-gray-50")}
-                            style={{fontFamily:f.family}}>
-                            <p className="text-2xl font-bold text-gray-800 leading-none">
-                              Aa Bb Cc
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Nicolás Vega — Desarrollador Web
-                            </p>
+                        <button key={f.name} onClick={()=>{setFontName(f.name);setFontFamily(f.family);}}
+                          className={cn("w-full text-left rounded-2xl border-2 overflow-hidden transition-all",
+                            fontName===f.name?"border-green-500 shadow-sm":"border-gray-100 hover:border-gray-200 hover:shadow-sm")}>
+                          <div className={cn("px-4 py-3",fontName===f.name?"bg-green-50":"bg-gray-50")} style={{fontFamily:f.family}}>
+                            <p className="text-2xl font-bold text-gray-800 leading-none">Aa Bb Cc</p>
+                            <p className="text-xs text-gray-500 mt-1">Nicolás Vega — Desarrollador Web</p>
                           </div>
-                          {/* Info */}
                           <div className="px-4 py-2 bg-white flex items-center justify-between">
                             <div>
                               <p className="text-xs font-bold text-gray-800">{f.name}</p>
@@ -498,13 +472,11 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                             </div>
                             {fontName===f.name
                               ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0"/>
-                              : <span className="text-[10px] text-gray-300">Usar</span>
-                            }
+                              : <span className="text-[10px] text-gray-300">Usar</span>}
                           </div>
                         </button>
                       ))}
                     </div>
-
                     <Divider/>
                     <Slider min={10} max={16} step={0.5} value={fontSize} onChange={setFSize} label="Tamaño de fuente" format={v=>`${v}px`}/>
                     <Divider/>
@@ -520,7 +492,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {/* ── ESTILO ── */}
                 {tab==="estilo" && (
                   <>
                     <STitle icon={<Palette size={10}/>} text="Color de acento"/>
@@ -553,10 +524,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         <button key={ds} onClick={()=>setDivider(ds)}
                           className={cn("p-2 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all",
                             dividerStyle===ds?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
-                          <div style={{width:"100%",height:0,
-                            borderTop:`2px solid ${dividerStyle===ds?"#16a34a":"#d1d5db"}`,
-                            borderTopStyle:ds==="none"?"solid":ds as any,
-                            opacity:ds==="none"?0:1}}/>
+                          <div style={{width:"100%",height:0,borderTop:`2px solid ${dividerStyle===ds?"#16a34a":"#d1d5db"}`,borderTopStyle:ds==="none"?"solid":ds as any,opacity:ds==="none"?0:1}}/>
                           <span className="text-[9px] font-semibold text-gray-500 capitalize">{ds}</span>
                         </button>
                       ))}
@@ -564,7 +532,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {/* ── DISEÑO ── */}
                 {tab==="diseno" && (
                   <>
                     <div className="flex items-center justify-between mb-1">
@@ -650,7 +617,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {/* ── SECCIONES ── */}
                 {tab==="secciones" && (
                   <>
                     <div className="flex items-center justify-between mb-2">
@@ -688,7 +654,6 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
               </div>
             </div>
 
-            {/* Stats */}
             <div className="mt-3 grid grid-cols-3 gap-2">
               {[
                 {v:currentTpl?.name??"—",l:"Plantilla"},
@@ -715,8 +680,13 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
               </div>
             </div>
             <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl p-5 flex-1 min-h-[640px] border border-gray-200 shadow-inner">
-              <div key={`${tplKey}-${accent}-${fontFamily}-${fontSize}-${lineHeight}-${photoShape}-${sectionStyle}-${skillsStyle}-${cardStyle}-${dividerStyle}-${uppercase}`}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px]">
+
+              {/* ── FIX FUENTES: fuerza la tipografía en todo el preview ── */}
+              <style>{`.sf-preview * { font-family: ${fontFamily} !important; }`}</style>
+
+              <div
+                key={`${tplKey}-${accent}-${fontFamily}-${fontSize}-${lineHeight}-${photoShape}-${sectionStyle}-${skillsStyle}-${cardStyle}-${dividerStyle}-${uppercase}`}
+                className="sf-preview bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px]">
                 {renderPreview()}
               </div>
             </div>
