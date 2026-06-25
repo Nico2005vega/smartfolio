@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { generateCVData } from "@/lib/cv-generator";
 import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, RecordType } from "@/types";
@@ -15,18 +15,39 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import PDFDownloadButton from "@/components/cv-templates/PDFDownloadButton";
 
-const CVPreviewModern    = dynamic(() => import("@/components/cv-templates/CVPreviewModern"),    { ssr:false });
-const CVPreviewClassic   = dynamic(() => import("@/components/cv-templates/CVPreviewClassic"),   { ssr:false });
-const CVPreviewExecutive = dynamic(() => import("@/components/cv-templates/CVPreviewExecutive"), { ssr:false });
-const CVPreviewCreative  = dynamic(() => import("@/components/cv-templates/CVPreviewCreative"),  { ssr:false });
-const CVPreviewMinimal   = dynamic(() => import("@/components/cv-templates/CVPreviewMinimal"),   { ssr:false });
-const CVPreviewTech      = dynamic(() => import("@/components/cv-templates/CVPreviewTech"),      { ssr:false });
-const CVPreviewCorporate = dynamic(() => import("@/components/cv-templates/CVPreviewCorporate"), { ssr:false });
-const CVPreviewElegant   = dynamic(() => import("@/components/cv-templates/CVPreviewElegant"),   { ssr:false });
-const CVPreviewATS       = dynamic(() => import("@/components/cv-templates/CVPreviewATS"),       { ssr:false });
-const CVPreviewBold      = dynamic(() => import("@/components/cv-templates/CVPreviewBold"),      { ssr:false });
-const CVPreviewCompact   = dynamic(() => import("@/components/cv-templates/CVPreviewCompact"),   { ssr:false });
-const CVPreviewAcademic  = dynamic(() => import("@/components/cv-templates/CVPreviewAcademic"),  { ssr:false });
+/* ── Skeleton para el preview mientras carga ─────────────── */
+const PreviewSkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px] flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3 text-gray-300">
+      <Loader2 size={28} className="animate-spin"/>
+      <span className="text-xs font-medium">Cargando plantilla...</span>
+    </div>
+  </div>
+);
+
+/* ── Dynamic imports — carga bajo demanda ────────────────── */
+const CVPreviewModern    = dynamic(() => import("@/components/cv-templates/CVPreviewModern"),    { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewClassic   = dynamic(() => import("@/components/cv-templates/CVPreviewClassic"),   { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewExecutive = dynamic(() => import("@/components/cv-templates/CVPreviewExecutive"), { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewCreative  = dynamic(() => import("@/components/cv-templates/CVPreviewCreative"),  { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewMinimal   = dynamic(() => import("@/components/cv-templates/CVPreviewMinimal"),   { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewTech      = dynamic(() => import("@/components/cv-templates/CVPreviewTech"),      { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewCorporate = dynamic(() => import("@/components/cv-templates/CVPreviewCorporate"), { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewElegant   = dynamic(() => import("@/components/cv-templates/CVPreviewElegant"),   { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewATS       = dynamic(() => import("@/components/cv-templates/CVPreviewATS"),       { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewBold      = dynamic(() => import("@/components/cv-templates/CVPreviewBold"),      { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewCompact   = dynamic(() => import("@/components/cv-templates/CVPreviewCompact"),   { ssr:false, loading:()=><PreviewSkeleton/> });
+const CVPreviewAcademic  = dynamic(() => import("@/components/cv-templates/CVPreviewAcademic"),  { ssr:false, loading:()=><PreviewSkeleton/> });
+
+/* ── Hook: debounce ──────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState<T>(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 const GOOGLE_FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&" +
@@ -120,13 +141,13 @@ function Thumb({ k, c }: { k:string; c:string }) {
     case "creative":  return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="#f8fafc" rx="4"/><rect width="80" height="26" fill={col} rx="3"/><rect y="16" width="80" height="10" fill={col}/><circle cx="14" cy="13" r="7" fill="white" fillOpacity=".22"/><rect x="27" y="7" width="28" height="3.5" fill="white" rx="1"/><rect x="57" y="28" width="18" height="68" fill="#f1f5f9"/>{[33,43,53,63,73].map((y,i)=>(<rect key={y} x="8" y={y} width={36-(i%3)*5} height="2.5" fill="#e2e8f0" rx="1"/>))}</svg>);
     case "minimal":   return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect x="8" y="9" width="46" height="7" fill="#09090b" rx="1"/><rect x="8" y="21" width="64" height=".6" fill="#e4e4e7"/>{[28,38,48,58,68,78].map((y,i)=>(<rect key={y} x="8" y={y} width={52-(i%4)*8} height="1.5" fill="#a1a1aa" rx="1"/>))}</svg>);
     case "tech":      return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="#f8fafc" rx="4"/><rect width="22" height="100" fill="#0f172a" rx="4"/><rect x="12" width="10" height="100" fill="#0f172a"/><circle cx="11" cy="16" r="5.5" fill={col} fillOpacity=".35"/>{[28,35,42,50].map(y=>(<rect key={y} x="4" y={y} width="13" height="1.5" fill={col} fillOpacity=".45" rx="1"/>))}<rect x="26" y="8" width="44" height="1.5" fill={col} rx="1"/>{[16,25,34,43,52,61,70,79].map((y,i)=>(<rect key={y} x="28" y={y} width={36-(i%3)*5} height="2" fill="#e2e8f0" rx="1"/>))}</svg>);
-    case "corporate": return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect width="80" height="28" fill={col} rx="3"/><rect y="18" width="80" height="10" fill={col}/><rect x="8" y="10" width="40" height="5" fill="white" fillOpacity=".8" rx="1"/><rect x="55" y="8" width="20" height="3" fill="white" fillOpacity=".5" rx="1"/><rect x="55" y="14" width="16" height="2" fill="white" fillOpacity=".4" rx="1"/>{[38,46,54,62,70,78,86,94].map((y,i)=>(<rect key={y} x={i%2===0?8:50} y={y} width={i%2===0?38:26} height="2" fill="#e2e8f0" rx="1"/>))}</svg>);
+    case "corporate": return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect width="80" height="28" fill={col} rx="3"/><rect y="18" width="80" height="10" fill={col}/><rect x="8" y="10" width="40" height="5" fill="white" fillOpacity=".8" rx="1"/>{[38,46,54,62,70,78,86,94].map((y,i)=>(<rect key={y} x={i%2===0?8:50} y={y} width={i%2===0?38:26} height="2" fill="#e2e8f0" rx="1"/>))}</svg>);
     case "elegant":   return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect x="20" y="10" width="40" height="7" fill="#1a1a1a" rx="1"/><rect x="28" y="20" width="8" height="1" fill={col} rx="1"/><rect x="36" y="19" width="3" height="3" fill={col} rx="1"/><rect x="39" y="20" width="13" height="1" fill={col} rx="1"/>{[28,34,40].map((y,i)=>(<rect key={y} x={18+i*2} y={y} width={44-i*4} height="1.5" fill="#a1a1aa" rx="1"/>))}{[50,60,70,80,90].map((y,i)=>(<rect key={y} x="12" y={y} width={56-(i%3)*10} height="1.5" fill="#d4d4d4" rx="1"/>))}</svg>);
     case "ats":       return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect x="8" y="8" width="50" height="6" fill="#000" rx="1"/><rect x="8" y="17" width="64" height="1.5" fill="#333"/>{[24,32,40,48,56,64,72,80,88].map((y,i)=>(<rect key={y} x={i%3===0?8:14} y={y} width={i%3===0?60:52} height="1.8" fill={i%3===0?"#555":"#aaa"} rx="1"/>))}</svg>);
     case "bold":      return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="#0f0f0f" rx="4"/><polygon points="35,0 80,0 80,100 50,100" fill={col}/><polygon points="28,0 45,0 60,100 43,100" fill={`${col}60`}/><rect x="6" y="20" width="26" height="8" fill="white" rx="1"/>{[36,44,52,60,68,76,84].map((y,i)=>(<rect key={y} x="6" y={y} width={i%3===0?28:i%3===1?22:25} height="1.8" fill="white" fillOpacity=".5" rx="1"/>))}</svg>);
-    case "compact":   return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect width="80" height="20" fill={`${col}15`} rx="3"/><rect y="10" width="80" height="10" fill={`${col}15`}/><rect x="8" y="8" width="30" height="5" fill={col} rx="1"/><rect x="8" y="26" width="40" height=".8" fill={col}/><rect x="48" y="26" width="24" height=".8" fill={col}/>{[30,36,42,48,54,60,66,72,78].map((y,i)=>(<rect key={y} x={i%2===0?8:50} y={y} width={i%2===0?38:26} height="1.5" fill="#e2e8f0" rx="1"/>))}</svg>);
-    case "academic":  return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect x="15" y="8" width="50" height="7" fill="#1e293b" rx="1"/><rect x="20" y="18" width="40" height="2" fill={col} fillOpacity=".5" rx="1"/>{[26,32,38].map((y,i)=>(<rect key={y} x={16+i*4} y={y} width={48-i*8} height="1.5" fill="#94a3b8" rx="1"/>))}<rect x="8" y="45" width="40" height="1.5" fill={col} rx="1"/>{[50,56,62,68,74,80,88].map((y,i)=>(<rect key={y} x={i%3===0?8:16} y={y} width={i%3===0?60:50} height="1.5" fill={i%3===0?"#334155":"#d4d4d4"} rx="1"/>))}</svg>);
-    default:          return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="#f1f5f9" rx="4"/><rect width="80" height="30" fill={col} rx="3"/><rect y="20" width="80" height="10" fill={col}/>{[38,48,58,68,78].map((y,i)=>(<rect key={y} x="8" y={y} width={65-(i%3)*10} height="2.5" fill="#e2e8f0" rx="1"/>))}</svg>);
+    case "compact":   return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect width="80" height="20" fill={`${col}15`} rx="3"/><rect x="8" y="8" width="30" height="5" fill={col} rx="1"/>{[30,36,42,48,54,60,66,72,78].map((y,i)=>(<rect key={y} x={i%2===0?8:50} y={y} width={i%2===0?38:26} height="1.5" fill="#e2e8f0" rx="1"/>))}</svg>);
+    case "academic":  return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="white" rx="4"/><rect x="15" y="8" width="50" height="7" fill="#1e293b" rx="1"/><rect x="20" y="18" width="40" height="2" fill={col} fillOpacity=".5" rx="1"/>{[26,32,38].map((y,i)=>(<rect key={y} x={16+i*4} y={y} width={48-i*8} height="1.5" fill="#94a3b8" rx="1"/>))}{[50,56,62,68,74,80,88].map((y,i)=>(<rect key={y} x={i%3===0?8:16} y={y} width={i%3===0?60:50} height="1.5" fill={i%3===0?"#334155":"#d4d4d4"} rx="1"/>))}</svg>);
+    default:          return (<svg viewBox="0 0 80 100" className="w-full h-full"><rect width="80" height="100" fill="#f1f5f9" rx="4"/><rect width="80" height="30" fill={col} rx="3"/>{[38,48,58,68,78].map((y,i)=>(<rect key={y} x="8" y={y} width={65-(i%3)*10} height="2.5" fill="#e2e8f0" rx="1"/>))}</svg>);
   }
 }
 
@@ -192,23 +213,15 @@ function GalleryModal({ currentKey, onSelect, onClose }: {
                   <div className="relative bg-gray-50" style={{ aspectRatio:"4/5" }}>
                     <Thumb k={tpl.key} c={tpl.accent}/>
                     {isHov && (
-                      <div className="absolute inset-0 flex items-center justify-center gap-2" style={{ background:"rgba(0,0,0,.45)", backdropFilter:"blur(1px)" }}>
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ background:"rgba(0,0,0,.45)", backdropFilter:"blur(1px)" }}>
                         <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white rounded-full shadow-lg"
                           style={{ background:tpl.accent }} onClick={e=>{e.stopPropagation();onSelect(tpl.key);onClose();}}>
                           Usar <ArrowRight size={11}/>
                         </button>
                       </div>
                     )}
-                    {isActive && (
-                      <div className="absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center shadow">
-                        <CheckCircle2 size={11} className="text-white"/>
-                      </div>
-                    )}
-                    {tpl.ats>=90 && (
-                      <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full">
-                        <Shield size={7}/> ATS
-                      </div>
-                    )}
+                    {isActive && <div className="absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center shadow"><CheckCircle2 size={11} className="text-white"/></div>}
+                    {tpl.ats>=90 && <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full"><Shield size={7}/> ATS</div>}
                     <button onClick={e=>{e.stopPropagation();setFavs(p=>{const n=new Set(p);n.has(tpl.key)?n.delete(tpl.key):n.add(tpl.key);return n;});}}
                       className={cn("absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all",
                         favs.has(tpl.key)?"bg-rose-500 opacity-100":"bg-white/80",(isHov||favs.has(tpl.key))?"opacity-100":"opacity-0")}>
@@ -304,6 +317,10 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const [hidden,       setHidden]       = useState<Set<RecordType>>(new Set());
   const [fontCat,      setFontCat]      = useState<"Sans"|"Serif"|"Mono"|"Todos">("Todos");
 
+  /* ── Debounce sliders — evita re-renders en cada pixel ── */
+  const debouncedFontSize   = useDebounce(fontSize,   120);
+  const debouncedLineHeight = useDebounce(lineHeight, 120);
+
   const filteredFonts = fontCat==="Todos" ? FONTS : FONTS.filter(f=>f.cat===fontCat);
   const allTpls    = REGISTRY.map(st=>(templates??[]).find(t=>t.template_key===st.template_key)??st);
   const currentTpl = allTpls.find(t=>t.template_key===tplKey)??allTpls[0];
@@ -317,17 +334,20 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   );
 
   const filteredRecords = records.filter(r=>!hidden.has(r.record_type));
+
+  /* ── extConfig usa valores debounced ────────────────────── */
   const extConfig = useMemo(()=>({
     ...(config??{id:"",profile_id:profile.id,template_id:null,sections_config:{} as any,last_generated_at:null,updated_at:""}),
     accent_color:accent, template:currentTpl,
     font_name:fontFamily,
     font_family:fontFamily.includes("Georgia")||fontFamily.includes("Playfair")||fontFamily.includes("Merriweather")||fontFamily.includes("Lora")||fontFamily.includes("Garamond")?"serif":fontFamily.includes("Mono")||fontFamily.includes("Code")||fontFamily.includes("Courier")?"mono":"sans",
-    font_size:fontSize, line_height:lineHeight,
+    font_size:debouncedFontSize,
+    line_height:debouncedLineHeight,
     photo_shape:photoShape, section_style:sectionStyle, skills_style:skillsStyle,
     card_style:cardStyle, divider_style:dividerStyle,
     show_photo:showPhoto, show_icons:showIcons, uppercase,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }),[config,accent,currentTpl,fontFamily,fontSize,lineHeight,photoShape,sectionStyle,skillsStyle,cardStyle,dividerStyle,showPhoto,showIcons,uppercase]);
+  }),[config,accent,currentTpl,fontFamily,debouncedFontSize,debouncedLineHeight,photoShape,sectionStyle,skillsStyle,cardStyle,dividerStyle,showPhoto,showIcons,uppercase]);
 
   const cvData = useMemo(
     ()=>generateCVData(profile,filteredRecords,skills,extConfig as CVConfiguration),
@@ -346,7 +366,8 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   };
   const share=()=>{navigator.clipboard.writeText(`${window.location.origin}/p/${profile.username_slug}`);toast.success("¡Enlace copiado! 🔗");};
 
-  const renderPreview=()=>{
+  /* ── renderPreview memoizado — no se recrea en cada render ─ */
+  const renderPreview = useCallback(()=>{
     const p={data:cvData};
     switch(tplKey){
       case "classic":   return <CVPreviewClassic   {...p}/>;
@@ -362,7 +383,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
       case "academic":  return <CVPreviewAcademic  {...p}/>;
       default:          return <CVPreviewModern    {...p}/>;
     }
-  };
+  },[tplKey,cvData]);
 
   const STitle=({icon,text}:{icon:React.ReactNode;text:string})=>(
     <div className="flex items-center gap-2 mb-3">
@@ -470,9 +491,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                               <p className="text-xs font-bold text-gray-800">{f.name}</p>
                               <p className="text-[10px] text-gray-400">{f.cat}</p>
                             </div>
-                            {fontName===f.name
-                              ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0"/>
-                              : <span className="text-[10px] text-gray-300">Usar</span>}
+                            {fontName===f.name ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0"/> : <span className="text-[10px] text-gray-300">Usar</span>}
                           </div>
                         </button>
                       ))}
@@ -676,17 +695,14 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                 <div className="w-3 h-3 rounded-full border border-white shadow-sm" style={{background:accent}}/>
                 <span className="text-xs font-medium text-gray-600">{currentTpl?.name}</span>
                 <span className="text-gray-300">·</span>
-                <span className="text-xs text-gray-400" style={{fontFamily:fontFamily}}>{fontName} {fontSize}px</span>
+                <span className="text-xs text-gray-400" style={{fontFamily}}>{fontName} {fontSize}px</span>
               </div>
             </div>
             <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl p-5 flex-1 min-h-[640px] border border-gray-200 shadow-inner">
-
-              {/* ── FIX FUENTES: fuerza la tipografía en todo el preview ── */}
+              {/* Fix fuentes */}
               <style>{`.sf-preview * { font-family: ${fontFamily} !important; }`}</style>
-
-              <div
-                key={`${tplKey}-${accent}-${fontFamily}-${fontSize}-${lineHeight}-${photoShape}-${sectionStyle}-${skillsStyle}-${cardStyle}-${dividerStyle}-${uppercase}`}
-                className="sf-preview bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px]">
+              {/* SIN key prop — React actualiza sin destruir el componente */}
+              <div className="sf-preview bg-white rounded-2xl shadow-xl overflow-hidden min-h-[590px]">
                 {renderPreview()}
               </div>
             </div>
