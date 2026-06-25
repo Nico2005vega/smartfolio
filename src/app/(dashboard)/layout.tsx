@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
-import MobileNav from "@/components/layout/MobileNav";
-import InactivityProvider from "@/components/InactivityProvider"; // ← AGREGA
+import BottomNav from "@/components/layout/BottomNav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -11,35 +10,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+    .from("profiles").select("*").eq("id", user.id).single();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+      {/* Sidebar solo en desktop */}
       <Sidebar role={profile?.role ?? "student"} />
 
-      <MobileNav
-        role={profile?.role ?? "student"}
-        firstName={profile?.first_name ?? "U"}
-        lastName={profile?.last_name ?? "S"}
-        email={user.email ?? ""}
-        plan={profile?.plan ?? "free"}
-        photoUrl={profile?.photo_url ?? null}
-      />
+      {/* Contenido principal */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <TopBar profile={profile} />
+        <main style={{
+          flex: 1,
+          padding: "20px 16px 80px",  /* padding-bottom para la bottom nav */
+        }}
+          className="lg:p-8 lg:pb-8">
+          {children}
+        </main>
+      </div>
 
-      {/* ↓ ENVUELVE solo esto con InactivityProvider */}
-      <InactivityProvider>
-        <div className="flex-1 flex flex-col min-w-0">
-          <TopBar profile={profile} />
-          <main className="flex-1 p-4 lg:p-8 overflow-auto">
-            {children}
-          </main>
-        </div>
-      </InactivityProvider>
-      {/* ↑ cierra aquí */}
-
+      {/* Bottom nav solo en móvil */}
+      <BottomNav />
     </div>
   );
 }
