@@ -1,26 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { unstable_cache } from "next/cache";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import MobileNav from "@/components/layout/MobileNav";
 import InactivityProvider from "@/components/InactivityProvider";
-
-/* ── Perfil cacheado 60s entre navegaciones ─────────────── */
-const getCachedProfile = (userId: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = await createClient();
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-      return data;
-    },
-    [`profile-${userId}`],
-    { revalidate: 60, tags: [`profile-${userId}`] }
-  )();
 
 export default async function DashboardLayout({
   children,
@@ -28,12 +11,14 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const profile = await getCachedProfile(user.id);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
   return (
     <div className="flex min-h-screen bg-gray-50">
