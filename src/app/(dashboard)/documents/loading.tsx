@@ -1,50 +1,39 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { cache } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import TopBar from "@/components/layout/TopBar";
-import MobileNav from "@/components/layout/MobileNav";
-import InactivityProvider from "@/components/InactivityProvider";
+import { Sk, SkStyle } from "@/components/ui/Skeleton";
 
-const getProfile = cache(async (userId: string) => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-  return data;
-});
-
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const profile = await getProfile(user.id);
-
+export default function DocumentsLoading() {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar role={profile?.role ?? "student"} />
+    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+      <style>{SkStyle}</style>
 
-      <MobileNav
-        role={profile?.role ?? "student"}
-        firstName={profile?.first_name ?? "U"}
-        lastName={profile?.last_name ?? "S"}
-        email={user.email ?? ""}
-        plan={profile?.plan ?? "free"}
-        photoUrl={profile?.photo_url ?? null}
-      />
-
-      <InactivityProvider>
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* TopBar recibe profile con fallback seguro */}
-          <TopBar profile={profile ?? null} />
-          <main className="flex-1 p-4 lg:p-8 overflow-auto">
-            {children}
-          </main>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", gap: "16px" }}>
+        <div>
+          <Sk style={{ width: 180, height: 26, marginBottom: 8 }} />
+          <Sk style={{ width: 130, height: 13 }} />
         </div>
-      </InactivityProvider>
+        <Sk style={{ width: 140, height: 38, borderRadius: 12 }} />
+      </div>
+
+      {/* Document cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{
+            background: "white", borderRadius: "14px",
+            border: "1px solid #f0f0f0", padding: "16px 18px",
+            display: "flex", alignItems: "center", gap: "14px",
+          }}>
+            <Sk style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <Sk style={{ width: "55%", height: 15, marginBottom: 7 }} />
+              <Sk style={{ width: "30%", height: 11 }} />
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Sk style={{ width: 34, height: 34, borderRadius: 9 }} />
+              <Sk style={{ width: 34, height: 34, borderRadius: 9 }} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,32 +1,59 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
+import MobileNav from "@/components/layout/MobileNav";
+import InactivityProvider from "@/components/InactivityProvider";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+/* ── Perfil cacheado 60s entre navegaciones ─────────────── */
+const getCachedProfile = (userId: string) =>
+  unstable_cache(
+    async () => {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      return data;
+    },
+    [`profile-${userId}`],
+    { revalidate: 60, tags: [`profile-${userId}`] }
+  )();
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles").select("*").eq("id", user.id).single();
+  const profile = await getCachedProfile(user.id);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
-      {/* Sidebar solo en desktop */}
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar role={profile?.role ?? "student"} />
 
-      {/* Contenido principal */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <TopBar profile={profile} />
-        <main style={{
-          flex: 1,
-          padding: "20px 16px 80px",  /* padding-bottom para la bottom nav */
-        }}
-          className="lg:p-8 lg:pb-8">
-          {children}
-        </main>
-      </div>
+      <MobileNav
+        role={profile?.role ?? "student"}
+        firstName={profile?.first_name ?? "U"}
+        lastName={profile?.last_name ?? "S"}
+        email={user.email ?? ""}
+        plan={profile?.plan ?? "free"}
+        photoUrl={profile?.photo_url ?? null}
+      />
+
+      <InactivityProvider>
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopBar profile={profile ?? null} />
+          <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
+        </div>
+      </InactivityProvider>
     </div>
   );
 }
