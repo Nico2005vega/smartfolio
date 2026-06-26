@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, GraduationCap, LayoutDashboard, User,
+  X, GraduationCap, LayoutDashboard, User,
   BookOpen, FileText, Palette, Settings, Shield, Tag
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -38,10 +38,8 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
   const router   = useRouter();
   const supabase = createClient();
 
-  // Cierra el menú al navegar
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  // Bloquea scroll cuando está abierto
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -59,20 +57,6 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
 
   return (
     <>
-      {/* Botón hamburguesa — solo visible en móvil */}
-      <button
-        onClick={() => setOpen(true)}
-        className="lg:hidden"
-        style={{
-          position: "fixed", top: "12px", left: "12px", zIndex: 50,
-          width: "40px", height: "40px", borderRadius: "10px",
-          background: "white", border: "1px solid #e5e7eb",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)", cursor: "pointer",
-        }}>
-        <Menu size={20} color="#374151" />
-      </button>
-
       {/* Overlay oscuro */}
       {open && (
         <div
@@ -95,7 +79,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
         display: "flex", flexDirection: "column",
         overflowY: "auto",
       }}>
-        {/* Header del drawer */}
+        {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "16px", borderBottom: "1px solid #f0f0f0",
@@ -119,7 +103,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
           </button>
         </div>
 
-        {/* Perfil del usuario */}
+        {/* Perfil */}
         <div style={{
           padding: "16px", borderBottom: "1px solid #f0f0f0",
           display: "flex", alignItems: "center", gap: "12px",
@@ -140,7 +124,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
             <p style={{ fontWeight: "600", fontSize: "14px", color: "#111827", margin: 0 }}>
               {firstName} {lastName}
             </p>
-           <p style={{ fontSize: "12px", color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
               {plan === "premium" ? "⭐ Premium" : "Plan Gratuito"}
             </p>
           </div>
@@ -189,7 +173,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
           )}
         </nav>
 
-        {/* Footer del drawer */}
+        {/* Footer */}
         <div style={{ padding: "12px", borderTop: "1px solid #f0f0f0" }}>
           <Link href="/settings"
             style={{
