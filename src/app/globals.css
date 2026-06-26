@@ -1,42 +1,49 @@
-/* ── Agregar al final de src/app/globals.css ── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Espaciado base responsive */
+/* ── Animaciones ── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease forwards;
+}
+
+/* ── Mobile responsive ── */
 @media (max-width: 1024px) {
   main {
     padding: 16px !important;
   }
-}
-
-/* Evita desbordamiento horizontal en móvil */
-* {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Tablas y grids que pueden desbordarse */
-@media (max-width: 640px) {
-  table {
-    font-size: 12px;
-  }
-
-  /* CV Builder: panel lateral ocupa toda la pantalla */
-  .xl\:grid-cols-\[360px_1fr\] {
+  .dash-body {
     grid-template-columns: 1fr !important;
   }
-
-  /* Texto clamp para títulos grandes */
-  h1 { font-size: clamp(18px, 5vw, 28px) !important; }
-  h2 { font-size: clamp(14px, 4vw, 20px) !important; }
 }
 
-/* Scroll horizontal suave para contenido ancho */
+@media (max-width: 640px) {
+  .dash-banner  { padding: 20px 18px !important; border-radius: 14px !important; }
+  .dash-kpi     { grid-template-columns: 1fr 1fr !important; }
+  .dash-actions { grid-template-columns: 1fr 1fr !important; }
+  .dash-records { grid-template-columns: repeat(2, 1fr) !important; }
+  table         { font-size: 12px; }
+}
+
+@media (max-width: 380px) {
+  .dash-actions { grid-template-columns: 1fr !important; }
+}
+
+/* ── Scroll suave en móvil ── */
 .overflow-auto {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Botones más fáciles de tocar en móvil */
-@media (max-width: 640px) {
-  button, a {
-    min-height: 36px;
-  }
-}
+/* ── Scrollbar oculta ── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
