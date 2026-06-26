@@ -40,19 +40,14 @@ export default function TopBar({ profile }: TopBarProps) {
       zIndex: 30,
       boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
     }}>
-      {/* Logo en móvil */}
-      <div className="lg:hidden" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <div style={{
-          width: "30px", height: "30px", borderRadius: "8px",
-          background: "#16a34a", display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{ color: "white", fontWeight: 800, fontSize: "13px" }}>S</span>
-        </div>
-        <span style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>Smartfolio</span>
-      </div>
-
-      {/* Spacer desktop */}
+      {/*
+        En móvil: espacio para el botón hamburguesa (fixed top-left 40px + 12px margen + gap)
+        En desktop: spacer invisible
+      */}
+      <div
+        className="lg:hidden"
+        style={{ width: 56, flexShrink: 0 }}
+      />
       <div className="hidden lg:block" />
 
       {/* Derecha */}
@@ -73,7 +68,7 @@ export default function TopBar({ profile }: TopBarProps) {
             background: "#16a34a", display: "flex",
             alignItems: "center", justifyContent: "center",
             color: "white", fontSize: "13px", fontWeight: 700,
-            overflow: "hidden", flexShrink: 0, cursor: "pointer",
+            overflow: "hidden", flexShrink: 0,
           }}>
             {profile?.photo_url
               ? <img src={profile.photo_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
