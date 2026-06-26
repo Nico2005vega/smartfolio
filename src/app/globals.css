@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* ── Animaciones ── */
 @keyframes shimmer {
@@ -17,14 +15,13 @@
   animation: fade-in 0.3s ease forwards;
 }
 
-/* ── Mobile responsive ── */
+/* ── Scrollbar oculta ── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Dashboard responsive ── */
 @media (max-width: 1024px) {
-  main {
-    padding: 16px !important;
-  }
-  .dash-body {
-    grid-template-columns: 1fr !important;
-  }
+  .dash-body { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 640px) {
@@ -32,18 +29,8 @@
   .dash-kpi     { grid-template-columns: 1fr 1fr !important; }
   .dash-actions { grid-template-columns: 1fr 1fr !important; }
   .dash-records { grid-template-columns: repeat(2, 1fr) !important; }
-  table         { font-size: 12px; }
 }
 
 @media (max-width: 380px) {
   .dash-actions { grid-template-columns: 1fr !important; }
 }
-
-/* ── Scroll suave en móvil ── */
-.overflow-auto {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* ── Scrollbar oculta ── */
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
