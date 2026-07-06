@@ -68,8 +68,6 @@ export default function DocumentUploadPage() {
         profile_id: user.id,
         file_name:  file.name,
         public_url: urlData.publicUrl,
-        file_size:  file.size,
-        mime_type:  file.type,
       });
 
       if (dbErr) { toast.error("Error al guardar: " + dbErr.message); return; }
