@@ -65,9 +65,10 @@ export default function DocumentUploadPage() {
         .getPublicUrl(path);
 
       const { error: dbErr } = await supabase.from("documents").insert({
-        profile_id: user.id,
-        file_name:  file.name,
-        public_url: urlData.publicUrl,
+        profile_id:   user.id,
+        file_name:    file.name,
+        public_url:   urlData.publicUrl,
+        storage_path: path,
       });
 
       if (dbErr) { toast.error("Error al guardar: " + dbErr.message); return; }
