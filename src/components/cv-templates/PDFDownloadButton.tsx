@@ -1,6 +1,7 @@
 "use client";
 import { useState, type ComponentType } from "react";
 import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { CVData } from "@/types";
 
 interface Props {
@@ -23,7 +24,7 @@ async function imageToBase64(url: string): Promise<string> {
   }
 }
 
-// Registry of all available PDF document modules
+/* ── Módulos PDF disponibles ─────────────────────────────── */
 const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data: CVData }> }>> = {
   modern:    () => import("./CVDocumentModern"),
   classic:   () => import("./CVDocumentClassic"),
@@ -31,6 +32,13 @@ const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data:
   creative:  () => import("./CVDocumentCreative"),
   minimal:   () => import("./CVDocumentMinimal"),
   tech:      () => import("./CVDocumentTech"),
+  /* Nuevos templates → usan el documento PDF más cercano */
+  corporate: () => import("./CVDocumentExecutive"),
+  elegant:   () => import("./CVDocumentClassic"),
+  ats:       () => import("./CVDocumentMinimal"),
+  bold:      () => import("./CVDocumentCreative"),
+  compact:   () => import("./CVDocumentModern"),
+  academic:  () => import("./CVDocumentClassic"),
 };
 
 export default function PDFDownloadButton({ data, fileName, templateKey }: Props) {
@@ -39,7 +47,7 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
   const handleDownload = async () => {
     setLoading(true);
     try {
-      // Convert photo to base64 to avoid CORS in react-pdf
+      /* Convertir foto a base64 para evitar CORS en react-pdf */
       let photoBase64 = "";
       if (data.profile.photo_url) {
         photoBase64 = await imageToBase64(data.profile.photo_url);
@@ -55,9 +63,9 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
 
       const { pdf } = await import("@react-pdf/renderer");
 
-      const key      = (templateKey in PDF_MODULES ? templateKey : "modern") as keyof typeof PDF_MODULES;
-      const mod      = await PDF_MODULES[key]();
-      const DocComp  = mod.default;
+      const key     = (templateKey in PDF_MODULES ? templateKey : "modern");
+      const mod     = await PDF_MODULES[key]();
+      const DocComp = mod.default;
 
       const blob = await pdf(<DocComp data={dataWithBase64} /> as any).toBlob();
       const url  = URL.createObjectURL(blob);
@@ -67,8 +75,11 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
       a.click();
       URL.revokeObjectURL(url);
 
+      toast.success("CV descargado correctamente ✓");
+
     } catch (err) {
       console.error("Error generando PDF:", err);
+      toast.error("No se pudo generar el PDF. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -79,7 +90,7 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
       onClick={handleDownload}
       disabled={loading}
       className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-colors disabled:opacity-60"
-      style={{ borderColor:"#16a34a", color:"#16a34a" }}
+      style={{ borderColor: "#16a34a", color: "#16a34a" }}
     >
       {loading
         ? <><Loader2 size={15} className="animate-spin" /> Generando PDF…</>
