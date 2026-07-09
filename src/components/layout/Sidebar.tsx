@@ -68,7 +68,7 @@ export default function Sidebar({ role }: SidebarProps) {
           </div>
           <div>
             <p style={{ fontWeight: "700", fontSize: "14px", color: "#111827", margin: 0, lineHeight: 1 }}>Smartfolio</p>
-            <p style={{ fontSize: "9px", color: "#9ca3af", margin: "2px 0 0" }}>UTS · BAN 00329</p>
+            <p style={{ fontSize: "9px", color: "#9ca3af", margin: "2px 0 0" }}></p>
           </div>
         </div>
       </div>

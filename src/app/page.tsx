@@ -22,7 +22,7 @@ export default async function LandingPage() {
           </div>
           <div>
             <p style={{ fontSize:"15px", fontWeight:"800", color:"#111827", margin:0, lineHeight:1 }}>Smartfolio</p>
-            <p style={{ fontSize:"10px", color:"#9ca3af", margin:0 }}>UTS · BAN 00329</p>
+            <p style={{ fontSize:"10px", color:"#9ca3af", margin:0 }}></p>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ export default async function LandingPage() {
         <div style={{ position:"relative", maxWidth:"640px", margin:"0 auto" }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:"6px", background:"rgba(74,222,128,0.15)", border:"1px solid rgba(74,222,128,0.3)", borderRadius:"99px", padding:"4px 12px", marginBottom:"20px" }}>
             <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:"#4ade80" }}/>
-            <span style={{ color:"#4ade80", fontSize:"12px", fontWeight:"600" }}>Proyecto BAN 00329 · UTS Bucaramanga</span>
+            <span style={{ color:"#4ade80", fontSize:"12px", fontWeight:"600" }}></span>
           </div>
 
           <h1 style={{ color:"white", fontSize:"42px", fontWeight:"800", margin:"0 0 16px", lineHeight:1.15, letterSpacing:"-0.5px" }}>
@@ -133,7 +133,7 @@ export default async function LandingPage() {
       {/* ── Footer ── */}
       <div style={{ borderTop:"1px solid #e5e7eb", padding:"20px 32px", textAlign:"center" }}>
         <p style={{ fontSize:"13px", color:"#9ca3af", margin:0 }}>
-          © 2025 Smartfolio · BAN 00329 · Nicolás Vega & Juan Carlos Rúgeles · UTS Bucaramanga
+          © 2025 Smartfolio · Nicolás Vega & Juan Carlos Rúgeles · UTS Bucaramanga
         </p>
       </div>
     </div>

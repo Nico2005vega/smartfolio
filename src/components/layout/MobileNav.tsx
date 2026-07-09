@@ -94,7 +94,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
             </div>
             <div>
               <p style={{ fontWeight: "700", fontSize: "15px", color: "#111827", margin: 0 }}>Smartfolio</p>
-              <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>UTS · BAN 00329</p>
+              <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}></p>
             </div>
           </div>
           <button onClick={() => setOpen(false)}
