@@ -66,7 +66,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <p style={{ color: "white", fontWeight: "700", fontSize: "20px", margin: 0, lineHeight: 1 }}>Smartfolio</p>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", margin: 0 }}>BAN 00329 · UTS Bucaramanga</p>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", margin: 0 }}></p>
             </div>
           </div>
         </div>
