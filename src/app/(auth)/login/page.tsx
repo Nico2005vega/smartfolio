@@ -84,7 +84,7 @@ export default function LoginPage() {
                 Smartfolio
               </p>
               <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", margin: 0 }}>
-                BAN 00329 · UTS Bucaramanga
+                
               </p>
             </div>
           </div>
