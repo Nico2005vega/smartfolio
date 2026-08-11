@@ -1,10 +1,11 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
-import { SKILL_CATEGORY_LABELS } from "@/types";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+const DARK_BG = "#0f0f0f";
+
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:    String(c?.accent_color ?? "#e11d48"),
     font:      c?.font_name ?? (c?.font_family === "serif" ? "Georgia,serif" : c?.font_family === "mono" ? "'Courier New',mono" : "system-ui,sans-serif"),
@@ -18,24 +19,30 @@ function getCfg(c: any) {
   };
 }
 
+type Cfg = ReturnType<typeof getCfg>;
+
+function SecHead({ icon, label, cfg }: { icon:string; label:string; cfg:Cfg }) {
+  const { accent, px, font, showIcons } = cfg;
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+      <div style={{ width:4, height:20, background:accent, borderRadius:2, flexShrink:0 }}/>
+      <h2 style={{ fontSize:px-1, fontWeight:800, textTransform:"uppercase", letterSpacing:"2px", color:DARK_BG, margin:0, fontFamily:font }}>
+        {showIcons ? `${icon} ` : ""}{label}
+      </h2>
+      <div style={{ flex:1, height:1, background:`${DARK_BG}18` }}/>
+    </div>
+  );
+}
+
 export default function CVPreviewBold({ data }: Props) {
   const { profile, sections, skills, config } = data;
-  const { accent, font, px, lh, photoR, skillsSt, showPhoto, showIcons, upper } = getCfg(config);
+  const cfg = getCfg(config);
+  const { accent, font, px, lh, photoR, skillsSt, showPhoto, upper } = cfg;
   const allSkills = Object.values(skills).flat();
   const name = upper
     ? `${profile.first_name} ${profile.last_name}`.toUpperCase()
     : `${profile.first_name} ${profile.last_name}`;
-  const darkBg = "#0f0f0f";
-
-  const SecHead = ({ icon, label }: { icon:string; label:string }) => (
-    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-      <div style={{ width:4, height:20, background:accent, borderRadius:2, flexShrink:0 }}/>
-      <h2 style={{ fontSize:px-1, fontWeight:800, textTransform:"uppercase", letterSpacing:"2px", color:darkBg, margin:0, fontFamily:font }}>
-        {showIcons ? `${icon} ` : ""}{label}
-      </h2>
-      <div style={{ flex:1, height:1, background:`${darkBg}18` }}/>
-    </div>
-  );
+  const darkBg = DARK_BG;
 
   return (
     <div style={{ fontFamily:font, fontSize:px, color:darkBg }}>
@@ -94,7 +101,7 @@ export default function CVPreviewBold({ data }: Props) {
       <div style={{ padding:"20px 28px" }}>
         {sections.map(section => (
           <div key={section.type} style={{ marginBottom:18 }}>
-            <SecHead icon={section.icon} label={section.label}/>
+            <SecHead icon={section.icon} label={section.label} cfg={cfg}/>
             {section.records.map(r => (
               <div key={r.id} style={{ display:"flex", gap:12, marginBottom:8, padding:"8px 10px", background:"#f9fafb", borderRadius:8, borderLeft:`3px solid ${accent}` }}>
                 <div style={{ flex:1 }}>
@@ -113,7 +120,7 @@ export default function CVPreviewBold({ data }: Props) {
         {/* Skills */}
         {allSkills.length > 0 && (
           <div>
-            <SecHead icon="🏷️" label="Habilidades"/>
+            <SecHead icon="🏷️" label="Habilidades" cfg={cfg}/>
             {skillsSt === "chips" ? (
               <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                 {allSkills.map(s => (

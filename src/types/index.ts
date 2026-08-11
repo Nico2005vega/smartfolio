@@ -147,6 +147,30 @@ export interface CVConfiguration {
   template?:         CVTemplate | null;
 }
 
+// ── Config extendida usada solo en memoria por el editor/preview de CV ────
+// (no se persiste completa en la BD, solo accent_color/template_id/id)
+export type CVFontFamilyKind = "sans" | "serif" | "mono";
+export type CVPhotoShape     = "circle" | "rounded" | "square";
+export type CVSectionStyle   = "underline" | "left-bar" | "filled" | "minimal";
+export type CVSkillsStyle    = "chips" | "dots" | "bars" | "text";
+export type CVCardStyle      = "flat" | "shadow" | "bordered" | "accent";
+export type CVDividerStyle   = "solid" | "dashed" | "dotted" | "double" | "none";
+
+export interface CVStyleConfig extends CVConfiguration {
+  font_name?:     string;
+  font_family?:   CVFontFamilyKind;
+  font_size?:     number;
+  line_height?:   number;
+  photo_shape?:   CVPhotoShape;
+  section_style?: CVSectionStyle;
+  skills_style?:  CVSkillsStyle;
+  card_style?:    CVCardStyle;
+  divider_style?: CVDividerStyle;
+  show_photo?:    boolean;
+  show_icons?:    boolean;
+  uppercase?:     boolean;
+}
+
 // ── CV Data (para generación del PDF) ─────────────────────
 export interface CVSection {
   type:    RecordType;
@@ -159,7 +183,7 @@ export interface CVData {
   profile:     Profile;
   sections:    CVSection[];
   skills:      Record<SkillCategory, Skill[]>;
-  config:      CVConfiguration;
+  config:      CVStyleConfig;
   templateKey: string;
 }
 

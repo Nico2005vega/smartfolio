@@ -1,10 +1,10 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:     String(c?.accent_color  ?? "#1e3a5f"),
     font:       c?.font_name            ?? (c?.font_family === "serif" ? "Georgia,serif" : c?.font_family === "mono" ? "'Courier New',mono" : "system-ui,sans-serif"),

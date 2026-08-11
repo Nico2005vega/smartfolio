@@ -453,7 +453,7 @@ export default function TemplateGalleryClient() {
     });
   };
 
-  const useTemplate = (key: string) => {
+  const goToTemplate = (key: string) => {
     router.push(`/cv-builder?template=${key}`);
   };
 
@@ -595,7 +595,7 @@ export default function TemplateGalleryClient() {
                 tpl={tpl}
                 isFav={favs.has(tpl.key)}
                 onFav={() => toggleFav(tpl.key)}
-                onUse={() => useTemplate(tpl.key)}
+                onUse={() => goToTemplate(tpl.key)}
               />
             ))}
           </div>

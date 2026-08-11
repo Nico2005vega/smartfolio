@@ -4,6 +4,7 @@ import AcademicRecordForm from "@/components/forms/AcademicRecordForm";
 import Link from "next/link";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import DeleteRecordButton from "@/components/forms/DeleteRecordButton";
+import type { AcademicRecord } from "@/types";
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -36,7 +37,7 @@ export default async function EditAcademicPage({ params }: Props) {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 lg:p-8">
         <h1 className="text-xl font-bold text-gray-900 mb-1">Editar registro académico</h1>
         <p className="text-gray-500 text-sm mb-7">Actualiza los datos de este logro académico.</p>
-        <AcademicRecordForm profileId={user.id} record={record as any} />
+        <AcademicRecordForm profileId={user.id} record={record as AcademicRecord} />
       </div>
     </div>
   );

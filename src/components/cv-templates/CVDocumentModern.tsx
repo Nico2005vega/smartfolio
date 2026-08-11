@@ -1,11 +1,10 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig, AcademicRecord, Skill } from "@/types";
 import { formatDate } from "@/lib/utils";
-import { SKILL_CATEGORY_LABELS } from "@/types";
 import { MapPin, Phone, Globe, Link as LinkIcon, Mail } from "lucide-react";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:     String(c?.accent_color  ?? "#059669"),
     font:       c?.font_family === "serif" ? "Georgia,'Times New Roman',serif"
@@ -23,114 +22,120 @@ function getCfg(c: any) {
   };
 }
 
+type Cfg = ReturnType<typeof getCfg>;
+
+/* Section header */
+function SecHead({ icon, label, cfg }: { icon:string; label:string; cfg:Cfg }) {
+  const { showIcons, secStyle, px, accent, font } = cfg;
+  const txt = showIcons ? `${icon} ${label}` : label;
+  if (secStyle === "left-bar") return (
+    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+      <div style={{ width:3, height:16, background:accent, borderRadius:2, flexShrink:0 }}/>
+      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{label}</h2>
+    </div>
+  );
+  if (secStyle === "filled") return (
+    <div style={{ background:`${accent}15`, padding:"4px 10px", borderRadius:6, marginBottom:10 }}>
+      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
+    </div>
+  );
+  if (secStyle === "minimal") return (
+    <div style={{ marginBottom:10 }}>
+      <h2 style={{ fontSize:px-3, fontWeight:700, textTransform:"uppercase", letterSpacing:"2px", color:"#9ca3af", margin:0, fontFamily:font }}>{label}</h2>
+    </div>
+  );
+  // default: underline
+  return (
+    <div style={{ borderBottom:`1.5px solid ${accent}`, paddingBottom:4, marginBottom:10 }}>
+      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
+    </div>
+  );
+}
+
+/* Record card */
+function Card({ r, cfg }: { r:AcademicRecord; cfg:Cfg }) {
+  const { font, cardSt, accent, px, lh } = cfg;
+  const base: React.CSSProperties = { display:"flex", gap:10, marginBottom:6, borderRadius:8, padding:"7px 8px", fontFamily:font };
+  const variants: Record<string,React.CSSProperties> = {
+    flat:     { ...base },
+    shadow:   { ...base, boxShadow:"0 1px 5px rgba(0,0,0,.09)", background:"#fafafa" },
+    bordered: { ...base, border:"1px solid #e5e7eb", background:"white" },
+    accent:   { ...base, background:`${accent}0d`, borderLeft:`3px solid ${accent}`, paddingLeft:10 },
+  };
+  return (
+    <div style={variants[cardSt] ?? base}>
+      <div style={{ width:42, flexShrink:0, textAlign:"right" }}>
+        <span style={{ fontSize:px-3, color:"#9ca3af" }}>
+          {r.end_date ? formatDate(r.end_date,"yyyy") : formatDate(r.start_date,"yyyy")}
+        </span>
+      </div>
+      <div style={{ flex:1 }}>
+        <p style={{ fontSize:px, fontWeight:600, color:"#111827", margin:0, lineHeight:lh, fontFamily:font }}>{r.title}</p>
+        <p style={{ fontSize:px-2, color:"#6b7280", margin:"2px 0 0", lineHeight:1.4 }}>
+          {r.institution}{r.duration_hours ? ` · ${r.duration_hours}h` : ""}
+        </p>
+        {r.description && (
+          <p style={{ fontSize:px-3, color:"#9ca3af", margin:"3px 0 0", lineHeight:1.5 }}>{r.description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* Skills in sidebar */
+function SidebarSkills({ allSkills, cfg }: { allSkills:Skill[]; cfg:Cfg }) {
+  const { skillsSt, px } = cfg;
+  if (allSkills.length === 0) return null;
+  if (skillsSt === "dots") return (
+    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+      {allSkills.slice(0,14).map(s => (
+        <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, fontSize:px-2, color:"rgba(255,255,255,.88)" }}>
+          <div style={{ width:4, height:4, borderRadius:"50%", background:"rgba(255,255,255,.55)", flexShrink:0 }}/>
+          {s.name}
+        </div>
+      ))}
+    </div>
+  );
+  if (skillsSt === "bars") return (
+    <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+      {allSkills.slice(0,8).map((s,i) => {
+        const pct = [90,75,85,70,80,65,88,72][i % 8];
+        return (
+          <div key={s.id}>
+            <div style={{ fontSize:px-3, color:"rgba(255,255,255,.8)", marginBottom:2 }}>{s.name}</div>
+            <div style={{ height:3, background:"rgba(255,255,255,.2)", borderRadius:2, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${pct}%`, background:"rgba(255,255,255,.7)", borderRadius:2 }}/>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+  if (skillsSt === "text") return (
+    <p style={{ fontSize:px-2, color:"rgba(255,255,255,.85)", lineHeight:1.8 }}>
+      {allSkills.map(s => s.name).join("  ·  ")}
+    </p>
+  );
+  // chips (default)
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+      {allSkills.slice(0,12).map(s => (
+        <div key={s.id} style={{ fontSize:px-2, color:"#fff", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:4, padding:"3px 8px" }}>
+          {s.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CVPreviewModern({ data }: Props) {
   const { profile, sections, skills, config } = data;
-  const { accent, font, px, lh, photoR, secStyle, skillsSt, cardSt, showPhoto, showIcons, upper } = getCfg(config);
+  const cfg = getCfg(config);
+  const { accent, font, px, lh, photoR, showPhoto } = cfg;
   const allSkills = Object.values(skills).flat();
-  const name = upper
+  const name = cfg.upper
     ? `${profile.first_name} ${profile.last_name}`.toUpperCase()
     : `${profile.first_name} ${profile.last_name}`;
-
-  /* Section header */
-  const SecHead = ({ icon, label }: { icon:string; label:string }) => {
-    const txt = showIcons ? `${icon} ${label}` : label;
-    if (secStyle === "left-bar") return (
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-        <div style={{ width:3, height:16, background:accent, borderRadius:2, flexShrink:0 }}/>
-        <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{label}</h2>
-      </div>
-    );
-    if (secStyle === "filled") return (
-      <div style={{ background:`${accent}15`, padding:"4px 10px", borderRadius:6, marginBottom:10 }}>
-        <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
-      </div>
-    );
-    if (secStyle === "minimal") return (
-      <div style={{ marginBottom:10 }}>
-        <h2 style={{ fontSize:px-3, fontWeight:700, textTransform:"uppercase", letterSpacing:"2px", color:"#9ca3af", margin:0, fontFamily:font }}>{label}</h2>
-      </div>
-    );
-    // default: underline
-    return (
-      <div style={{ borderBottom:`1.5px solid ${accent}`, paddingBottom:4, marginBottom:10 }}>
-        <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
-      </div>
-    );
-  };
-
-  /* Record card */
-  const Card = ({ r }: { r:any }) => {
-    const base: React.CSSProperties = { display:"flex", gap:10, marginBottom:6, borderRadius:8, padding:"7px 8px", fontFamily:font };
-    const variants: Record<string,React.CSSProperties> = {
-      flat:     { ...base },
-      shadow:   { ...base, boxShadow:"0 1px 5px rgba(0,0,0,.09)", background:"#fafafa" },
-      bordered: { ...base, border:"1px solid #e5e7eb", background:"white" },
-      accent:   { ...base, background:`${accent}0d`, borderLeft:`3px solid ${accent}`, paddingLeft:10 },
-    };
-    return (
-      <div style={variants[cardSt] ?? base}>
-        <div style={{ width:42, flexShrink:0, textAlign:"right" }}>
-          <span style={{ fontSize:px-3, color:"#9ca3af" }}>
-            {r.end_date ? formatDate(r.end_date,"yyyy") : formatDate(r.start_date,"yyyy")}
-          </span>
-        </div>
-        <div style={{ flex:1 }}>
-          <p style={{ fontSize:px, fontWeight:600, color:"#111827", margin:0, lineHeight:lh, fontFamily:font }}>{r.title}</p>
-          <p style={{ fontSize:px-2, color:"#6b7280", margin:"2px 0 0", lineHeight:1.4 }}>
-            {r.institution}{r.duration_hours ? ` · ${r.duration_hours}h` : ""}
-          </p>
-          {r.description && (
-            <p style={{ fontSize:px-3, color:"#9ca3af", margin:"3px 0 0", lineHeight:1.5 }}>{r.description}</p>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  /* Skills in sidebar */
-  const SidebarSkills = () => {
-    if (allSkills.length === 0) return null;
-    if (skillsSt === "dots") return (
-      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-        {allSkills.slice(0,14).map(s => (
-          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, fontSize:px-2, color:"rgba(255,255,255,.88)" }}>
-            <div style={{ width:4, height:4, borderRadius:"50%", background:"rgba(255,255,255,.55)", flexShrink:0 }}/>
-            {s.name}
-          </div>
-        ))}
-      </div>
-    );
-    if (skillsSt === "bars") return (
-      <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-        {allSkills.slice(0,8).map((s,i) => {
-          const pct = [90,75,85,70,80,65,88,72][i % 8];
-          return (
-            <div key={s.id}>
-              <div style={{ fontSize:px-3, color:"rgba(255,255,255,.8)", marginBottom:2 }}>{s.name}</div>
-              <div style={{ height:3, background:"rgba(255,255,255,.2)", borderRadius:2, overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${pct}%`, background:"rgba(255,255,255,.7)", borderRadius:2 }}/>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-    if (skillsSt === "text") return (
-      <p style={{ fontSize:px-2, color:"rgba(255,255,255,.85)", lineHeight:1.8 }}>
-        {allSkills.map(s => s.name).join("  ·  ")}
-      </p>
-    );
-    // chips (default)
-    return (
-      <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-        {allSkills.slice(0,12).map(s => (
-          <div key={s.id} style={{ fontSize:px-2, color:"#fff", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:4, padding:"3px 8px" }}>
-            {s.name}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div style={{ fontFamily:font, color:"#1f2937", fontSize:px, minHeight:"297mm" }}>
@@ -163,7 +168,7 @@ export default function CVPreviewModern({ data }: Props) {
               <div style={{ fontSize:px-4, fontWeight:700, textTransform:"uppercase", letterSpacing:"1px", color:"rgba(255,255,255,.55)", marginBottom:8 }}>
                 Habilidades
               </div>
-              <SidebarSkills/>
+              <SidebarSkills allSkills={allSkills} cfg={cfg}/>
             </div>
           )}
         </div>
@@ -182,8 +187,8 @@ export default function CVPreviewModern({ data }: Props) {
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             {sections.map(section => (
               <div key={section.type}>
-                <SecHead icon={section.icon} label={section.label}/>
-                {section.records.map(r => <Card key={r.id} r={r}/>)}
+                <SecHead icon={section.icon} label={section.label} cfg={cfg}/>
+                {section.records.map(r => <Card key={r.id} r={r} cfg={cfg}/>)}
               </div>
             ))}
           </div>

@@ -115,7 +115,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
 
       {/* Contenido */}
       <div style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: "20px" }}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_240px]" style={{ gap: "20px" }}>
 
           {/* Registros académicos */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

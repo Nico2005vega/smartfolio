@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { generateCVData } from "@/lib/cv-generator";
-import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, RecordType } from "@/types";
+import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, CVStyleConfig, RecordType } from "@/types";
 import { RECORD_TYPE_LABELS } from "@/types";
 import { toast } from "sonner";
 import {
@@ -281,6 +281,18 @@ function Toggle({ checked, onChange }:{ checked:boolean; onChange:(v:boolean)=>v
   );
 }
 
+function STitle({icon,text}:{icon:React.ReactNode;text:string}) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 text-[10px]">{icon}</div>
+      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{text}</span>
+    </div>
+  );
+}
+function Divider() {
+  return <div className="border-t border-gray-100 my-4"/>;
+}
+
 interface Props {
   profile:Profile|null; records:AcademicRecord[]; skills:Skill[];
   templates:CVTemplate[]; config:CVConfiguration|null; preSelectedTemplate?:string;
@@ -325,19 +337,12 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const allTpls    = REGISTRY.map(st=>(templates??[]).find(t=>t.template_key===st.template_key)??st);
   const currentTpl = allTpls.find(t=>t.template_key===tplKey)??allTpls[0];
 
-  if(!profile) return (
-    <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"><FileText size={26} className="text-gray-400"/></div>
-      <p className="font-bold text-gray-700">Completa tu perfil primero</p>
-      <a href="/profile" className="text-sm text-green-600 underline">Ir al perfil →</a>
-    </div>
-  );
-
   const filteredRecords = records.filter(r=>!hidden.has(r.record_type));
 
   /* ── extConfig usa valores debounced ────────────────────── */
+  /* Hooks se llaman siempre, aunque profile sea null, para no violar rules-of-hooks */
   const extConfig = useMemo(()=>({
-    ...(config??{id:"",profile_id:profile.id,template_id:null,sections_config:{} as any,last_generated_at:null,updated_at:""}),
+    ...(config??{id:"",profile_id:profile?.id??"",template_id:null,sections_config:{} as Record<RecordType,never>,last_generated_at:null,updated_at:""}),
     accent_color:accent, template:currentTpl,
     font_name:fontFamily,
     font_family:fontFamily.includes("Georgia")||fontFamily.includes("Playfair")||fontFamily.includes("Merriweather")||fontFamily.includes("Lora")||fontFamily.includes("Garamond")?"serif":fontFamily.includes("Mono")||fontFamily.includes("Code")||fontFamily.includes("Courier")?"mono":"sans",
@@ -350,21 +355,11 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   }),[config,accent,currentTpl,fontFamily,debouncedFontSize,debouncedLineHeight,photoShape,sectionStyle,skillsStyle,cardStyle,dividerStyle,showPhoto,showIcons,uppercase]);
 
   const cvData = useMemo(
-    ()=>generateCVData(profile,filteredRecords,skills,extConfig as CVConfiguration),
+    // profile nunca es null aquí en la práctica: si lo es, el componente retorna antes de usar cvData
+    ()=>generateCVData(profile??({} as Profile),filteredRecords,skills,extConfig as CVStyleConfig),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [profile,filteredRecords,skills,extConfig]
   );
-
-  const visibleRecs  = records.filter(r=>r.is_visible_in_cv&&!hidden.has(r.record_type));
-  const sectionTypes = [...new Set(records.filter(r=>r.is_visible_in_cv).map(r=>r.record_type))];
-
-  const save = async()=>{
-    setSaving(true);
-    await supabase.from("cv_configurations").upsert({profile_id:profile.id,template_id:currentTpl?.id??null,accent_color:accent,last_generated_at:new Date().toISOString()},{onConflict:"profile_id"});
-    toast.success("Guardado ✓");
-    setSaving(false);
-  };
-  const share=()=>{navigator.clipboard.writeText(`${window.location.origin}/p/${profile.username_slug}`);toast.success("¡Enlace copiado! 🔗");};
 
   /* ── renderPreview memoizado — no se recrea en cada render ─ */
   const renderPreview = useCallback(()=>{
@@ -385,13 +380,24 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
     }
   },[tplKey,cvData]);
 
-  const STitle=({icon,text}:{icon:React.ReactNode;text:string})=>(
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 text-[10px]">{icon}</div>
-      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{text}</span>
+  if(!profile) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center"><FileText size={26} className="text-gray-400"/></div>
+      <p className="font-bold text-gray-700">Completa tu perfil primero</p>
+      <a href="/profile" className="text-sm text-green-600 underline">Ir al perfil →</a>
     </div>
   );
-  const Divider=()=><div className="border-t border-gray-100 my-4"/>;
+
+  const visibleRecs  = records.filter(r=>r.is_visible_in_cv&&!hidden.has(r.record_type));
+  const sectionTypes = [...new Set(records.filter(r=>r.is_visible_in_cv).map(r=>r.record_type))];
+
+  const save = async()=>{
+    setSaving(true);
+    await supabase.from("cv_configurations").upsert({profile_id:profile.id,template_id:currentTpl?.id??null,accent_color:accent,last_generated_at:new Date().toISOString()},{onConflict:"profile_id"});
+    toast.success("Guardado ✓");
+    setSaving(false);
+  };
+  const share=()=>{navigator.clipboard.writeText(`${window.location.origin}/p/${profile.username_slug}`);toast.success("¡Enlace copiado! 🔗");};
 
   return (
     <>
@@ -543,7 +549,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         <button key={ds} onClick={()=>setDivider(ds)}
                           className={cn("p-2 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all",
                             dividerStyle===ds?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
-                          <div style={{width:"100%",height:0,borderTop:`2px solid ${dividerStyle===ds?"#16a34a":"#d1d5db"}`,borderTopStyle:ds==="none"?"solid":ds as any,opacity:ds==="none"?0:1}}/>
+                          <div style={{width:"100%",height:0,borderTop:`2px solid ${dividerStyle===ds?"#16a34a":"#d1d5db"}`,borderTopStyle:(ds==="none"?"solid":ds) as React.CSSProperties["borderTopStyle"],opacity:ds==="none"?0:1}}/>
                           <span className="text-[9px] font-semibold text-gray-500 capitalize">{ds}</span>
                         </button>
                       ))}
@@ -560,7 +566,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                     {showPhoto&&(
                       <div className="grid grid-cols-3 gap-2">
                         {[{key:"circle",label:"Círculo",radius:"50%"},{key:"rounded",label:"Redondeado",radius:"10px"},{key:"square",label:"Cuadrado",radius:"2px"}].map(({key,label,radius})=>(
-                          <button key={key} onClick={()=>setPhotoShape(key as any)}
+                          <button key={key} onClick={()=>setPhotoShape(key as "circle"|"rounded"|"square")}
                             className={cn("p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all",
                               photoShape===key?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
                             <div className="w-9 h-9 bg-gradient-to-br from-gray-300 to-gray-200 flex items-center justify-center" style={{borderRadius:radius}}>
@@ -580,7 +586,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"filled",   label:"Fondo relleno", render:(c:string)=>(<div className="mx-2 my-1.5 px-2 py-1 rounded-md" style={{background:`${c}18`}}><p className="text-[9px] font-bold tracking-widest uppercase" style={{color:c}}>Educación</p></div>)},
                         {key:"minimal",  label:"Minimalista",   render:(_:string)=>(<div className="px-2 py-2"><p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase">Educación</p></div>)},
                       ].map(({key,label,render})=>(
-                        <button key={key} onClick={()=>setSectionStyle(key as any)}
+                        <button key={key} onClick={()=>setSectionStyle(key as "underline"|"left-bar"|"filled"|"minimal")}
                           className={cn("rounded-2xl border-2 overflow-hidden text-left transition-all",
                             sectionStyle===key?"border-green-500":"border-gray-100 hover:border-gray-200")}>
                           <div className="bg-gray-50 min-h-[40px] border-b border-gray-100">{render(accent)}</div>
@@ -597,7 +603,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"bars", label:"Barras",    render:(c:string)=>(<div className="p-2 space-y-1.5">{[["React",80],["Node",60]].map(([s,v])=>(<div key={s as string}><p className="text-[8px] text-gray-500 mb-0.5">{s as string}</p><div className="h-1 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${v}%`,background:c}}/></div></div>))}</div>)},
                         {key:"text", label:"Texto",     render:(_:string)=>(<div className="p-2"><p className="text-[9px] text-gray-500 leading-relaxed">React · Node · CSS · Git</p></div>)},
                       ].map(({key,label,render})=>(
-                        <button key={key} onClick={()=>setSkillsStyle(key as any)}
+                        <button key={key} onClick={()=>setSkillsStyle(key as "chips"|"dots"|"bars"|"text")}
                           className={cn("rounded-2xl border-2 overflow-hidden text-left transition-all",
                             skillsStyle===key?"border-green-500":"border-gray-100 hover:border-gray-200")}>
                           <div className="bg-gray-50 min-h-[48px] border-b border-gray-100">{render(accent)}</div>
@@ -614,7 +620,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"bordered", label:"Bordeado", style:{border:"1px solid #e5e7eb"} as React.CSSProperties},
                         {key:"accent",   label:"Acento",   style:{} as React.CSSProperties},
                       ].map(({key,label,style})=>(
-                        <button key={key} onClick={()=>setCardStyle(key as any)}
+                        <button key={key} onClick={()=>setCardStyle(key as "flat"|"shadow"|"bordered"|"accent")}
                           className={cn("p-3 rounded-2xl border-2 text-left transition-all",
                             cardStyle===key?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
                           <div className="h-6 rounded-lg mb-1.5 flex items-center px-2 bg-white"
@@ -711,4 +717,4 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
       </div>
     </>
   );
-}
+} 

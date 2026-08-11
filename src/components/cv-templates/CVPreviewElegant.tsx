@@ -1,9 +1,9 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:    String(c?.accent_color ?? "#b7882c"),
     font:      c?.font_name ?? (c?.font_family === "sans" ? "system-ui,sans-serif" : c?.font_family === "mono" ? "'Courier New',mono" : "Georgia,'Palatino Linotype',serif"),
@@ -15,31 +15,39 @@ function getCfg(c: any) {
   };
 }
 
-export default function CVPreviewElegant({ data }: Props) {
-  const { profile, sections, skills, config } = data;
-  const { accent, font, px, lh, skillsSt, upper } = getCfg(config);
-  const allSkills = Object.values(skills).flat();
-  const name = upper
-    ? `${profile.first_name} ${profile.last_name}`.toUpperCase()
-    : `${profile.first_name} ${profile.last_name}`;
+type Cfg = ReturnType<typeof getCfg>;
 
-  const GoldLine = () => (
+function GoldLine({ accent }: { accent:string }) {
+  return (
     <div style={{ display:"flex", alignItems:"center", gap:12, margin:"10px 0" }}>
       <div style={{ flex:1, height:".7px", background:`linear-gradient(to right, transparent, ${accent})` }}/>
       <div style={{ width:6, height:6, background:accent, transform:"rotate(45deg)", flexShrink:0 }}/>
       <div style={{ flex:1, height:".7px", background:`linear-gradient(to left, transparent, ${accent})` }}/>
     </div>
   );
+}
 
-  const SecHead = ({ icon, label }: { icon:string; label:string }) => (
+function SecHead({ label, cfg }: { icon:string; label:string; cfg:Cfg }) {
+  const { accent, px, font } = cfg;
+  return (
     <div style={{ textAlign:"center", margin:"16px 0 10px" }}>
-      <GoldLine/>
+      <GoldLine accent={accent}/>
       <h2 style={{ fontSize:px-1, fontWeight:600, textTransform:"uppercase", letterSpacing:"3px", color:accent, margin:0, fontFamily:font }}>
         {label}
       </h2>
-      <GoldLine/>
+      <GoldLine accent={accent}/>
     </div>
   );
+}
+
+export default function CVPreviewElegant({ data }: Props) {
+  const { profile, sections, skills, config } = data;
+  const cfg = getCfg(config);
+  const { accent, font, px, lh, skillsSt, upper } = cfg;
+  const allSkills = Object.values(skills).flat();
+  const name = upper
+    ? `${profile.first_name} ${profile.last_name}`.toUpperCase()
+    : `${profile.first_name} ${profile.last_name}`;
 
   return (
     <div style={{ fontFamily:font, fontSize:px, color:"#2d2d2d", background:"white", padding:"36px 44px" }}>
@@ -74,7 +82,7 @@ export default function CVPreviewElegant({ data }: Props) {
       {/* Sections */}
       {sections.map(section => (
         <div key={section.type}>
-          <SecHead icon={section.icon} label={section.label}/>
+          <SecHead icon={section.icon} label={section.label} cfg={cfg}/>
           {section.records.map(r => (
             <div key={r.id} style={{ display:"grid", gridTemplateColumns:"1fr 80px", gap:12, marginBottom:10, paddingBottom:10, borderBottom:`0.5px solid ${accent}22` }}>
               <div>
@@ -93,7 +101,7 @@ export default function CVPreviewElegant({ data }: Props) {
       {/* Skills */}
       {allSkills.length > 0 && (
         <>
-          <SecHead icon="🏷️" label="Competencias"/>
+          <SecHead icon="🏷️" label="Competencias" cfg={cfg}/>
           {skillsSt === "bars" ? (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 20px" }}>
               {allSkills.slice(0,10).map((s,i) => {

@@ -85,7 +85,13 @@ export function InstitutionSearch({ value, onChange, error, disabled = false }: 
     return list.slice(0, 50);
   }, [query, selectedDept, selectedCity, selectedType]);
 
-  useEffect(() => { setQuery(value ?? ""); }, [value]);
+  /* Sincroniza query cuando el prop `value` cambia externamente — ajustado en
+     render en vez de en un efecto, para no disparar un render extra */
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setQuery(value ?? "");
+  }
 
   useEffect(() => {
     const fn = (e: MouseEvent) => {

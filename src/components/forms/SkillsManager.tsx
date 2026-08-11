@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { skillSchema, type SkillFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
@@ -41,7 +41,7 @@ export default function SkillsManager({ profileId, initialSkills }: Props) {
     register, handleSubmit, reset,
     formState: { errors, isSubmitting },
   } = useForm<SkillFormData>({
-    resolver: zodResolver(skillSchema) as any,
+    resolver: zodResolver(skillSchema) as Resolver<SkillFormData>,
     defaultValues: { category: activeCategory },
   });
 

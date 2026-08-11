@@ -50,7 +50,6 @@ export default function Sidebar({ role }: SidebarProps) {
         height: "100vh",
         position: "sticky",
         top: 0,
-        display: "flex",
         flexDirection: "column",
         overflow: "hidden", // evita que crezca
       }}>

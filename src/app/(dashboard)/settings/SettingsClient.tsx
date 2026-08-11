@@ -167,7 +167,7 @@ export default function SettingsClient({ profile, userId, email, cvConfig }: Pro
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText size={14} className="text-gray-400 flex-shrink-0" />
                     <span className="text-sm text-gray-700 truncate">
-                      {(cvConfig as any).template?.name ?? "Sin plantilla"}
+                      {cvConfig.template?.name ?? "Sin plantilla"}
                     </span>
                   </div>
                   {cvConfig.accent_color && (

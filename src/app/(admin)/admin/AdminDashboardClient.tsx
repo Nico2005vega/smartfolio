@@ -1,11 +1,14 @@
 "use client";
 import { Users, FileText, BookOpen, Eye } from "lucide-react";
+import type { Profile } from "@/types";
+
+type RecentUser = Pick<Profile, "id"|"first_name"|"last_name"|"plan"|"role"|"created_at"|"visit_count">;
 
 interface Props {
   totalUsers:   number;
   totalRecords: number;
   totalDocs:    number;
-  recentUsers:  any[];
+  recentUsers:  RecentUser[];
   chartByType:  { name: string; value: number }[];
   chartByMonth: { name: string; value: number }[];
 }

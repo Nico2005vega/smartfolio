@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType } from "@/types";
+import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType, type AcademicRecord } from "@/types";
 import Link from "next/link";
 import { Plus, Edit, Search, X, Filter } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
+type RecordWithDoc = AcademicRecord & { document: { file_name:string; public_url:string } | null };
+
 export default function AcademicPage() {
-  const [records, setRecords]         = useState<any[]>([]);
+  const [records, setRecords]         = useState<RecordWithDoc[]>([]);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -38,7 +40,7 @@ export default function AcademicPage() {
     return matchSearch && matchFilter;
   });
 
-  const byType = filtered.reduce<Record<string, any[]>>((acc, r) => {
+  const byType = filtered.reduce<Record<string, RecordWithDoc[]>>((acc, r) => {
     acc[r.record_type] = [...(acc[r.record_type] ?? []), r];
     return acc;
   }, {});
@@ -143,7 +145,7 @@ export default function AcademicPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           {search && (
             <p style={{ fontSize: "13px", color: "#9ca3af" }}>
-              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para <strong style={{ color: "#374151" }}>"{search}"</strong>
+              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para <strong style={{ color: "#374151" }}>&quot;{search}&quot;</strong>
             </p>
           )}
           {Object.entries(byType).map(([type, items]) => (

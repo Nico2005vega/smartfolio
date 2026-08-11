@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { generateCVData } from "@/lib/cv-generator";
+import type { Profile, AcademicRecord, Skill, CVStyleConfig } from "@/types";
 
 export async function POST() {
   const supabase = await createClient();
@@ -15,7 +16,12 @@ export async function POST() {
   ]);
 
   if (!profile) return NextResponse.json({ error:"Not found" }, { status:404 });
-  const cvData = generateCVData(profile as any, (records ?? []) as any, (skills ?? []) as any, config as any);
+  const cvData = generateCVData(
+    profile as Profile,
+    (records ?? []) as AcademicRecord[],
+    (skills ?? []) as Skill[],
+    config as CVStyleConfig
+  );
   await supabase.from("cv_configurations").update({ last_generated_at: new Date().toISOString() }).eq("profile_id", user.id);
   return NextResponse.json(cvData);
 }

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  X, GraduationCap, LayoutDashboard, User,
+  Menu, X, GraduationCap, LayoutDashboard, User,
   BookOpen, FileText, Palette, Settings, Shield, Tag
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -38,7 +38,13 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
   const router   = useRouter();
   const supabase = createClient();
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  /* Cierra el drawer al cambiar de ruta — ajustado en render en vez de en un
+     efecto, para no disparar un render extra (ver "you-might-not-need-an-effect") */
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -57,6 +63,24 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
 
   return (
     <>
+      {/* Botón hamburguesa — solo en móvil, abre el drawer */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="lg:hidden"
+          aria-label="Abrir menú"
+          style={{
+            position: "fixed", top: 10, left: 12, zIndex: 50,
+            width: 40, height: 40, borderRadius: 10,
+            background: "white", border: "1px solid #f0f0f0",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Menu size={20} color="#374151" />
+        </button>
+      )}
+
       {/* Overlay oscuro */}
       {open && (
         <div

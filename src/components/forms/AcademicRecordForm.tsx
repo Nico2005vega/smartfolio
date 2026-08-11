@@ -1,5 +1,5 @@
 "use client";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { academicRecordSchema, type AcademicFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
@@ -34,7 +34,7 @@ export default function AcademicRecordForm({ profileId, record }: Props) {
     setValue,
     formState: { errors },
   } = useForm<AcademicFormData>({
-    resolver: zodResolver(academicRecordSchema) as any,
+    resolver: zodResolver(academicRecordSchema) as Resolver<AcademicFormData>,
     defaultValues: record ? {
       record_type:      record.record_type,
       title:            record.title,

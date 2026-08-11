@@ -1,5 +1,5 @@
 import type {
-  Profile, AcademicRecord, Skill, CVConfiguration,
+  Profile, AcademicRecord, Skill, CVStyleConfig,
   CVData, CVSection, RecordType, SkillCategory
 } from "@/types";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS } from "@/types";
@@ -13,7 +13,7 @@ export function generateCVData(
   profile: Profile,
   records: AcademicRecord[],
   skills: Skill[],
-  config: CVConfiguration
+  config: CVStyleConfig
 ): CVData {
   // 1. Filtrar solo registros visibles
   const visibleRecords = records.filter((r) => r.is_visible_in_cv);

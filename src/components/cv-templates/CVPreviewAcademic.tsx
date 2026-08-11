@@ -1,9 +1,9 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:    String(c?.accent_color ?? "#4f46e5"),
     font:      c?.font_name ?? (c?.font_family === "sans" ? "system-ui,sans-serif" : c?.font_family === "mono" ? "'Courier New',mono" : "Georgia,'Times New Roman',serif"),

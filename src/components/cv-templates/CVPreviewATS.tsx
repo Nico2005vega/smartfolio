@@ -1,9 +1,9 @@
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 interface Props { data: CVData; }
 
-function getCfg(c: any) {
+function getCfg(c: CVStyleConfig | undefined) {
   return {
     font: c?.font_name ?? (c?.font_family === "serif" ? "Georgia,serif" : "'Arial',system-ui,sans-serif"),
     px:   Number(c?.font_size   ?? 12),

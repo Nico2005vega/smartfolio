@@ -1,8 +1,9 @@
 "use client";
-import { useState, type ComponentType } from "react";
+import { useState, type ComponentType, type ReactElement } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CVData } from "@/types";
+import type { DocumentProps } from "@react-pdf/renderer";
 
 interface Props {
   data:        CVData;
@@ -67,7 +68,7 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
       const mod     = await PDF_MODULES[key]();
       const DocComp = mod.default;
 
-      const blob = await pdf(<DocComp data={dataWithBase64} /> as any).toBlob();
+      const blob = await pdf(<DocComp data={dataWithBase64} /> as ReactElement<DocumentProps>).toBlob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href     = url;
