@@ -8,6 +8,7 @@ import {
   Globe, User, Lock, Zap, Palette, FileText,
 } from "lucide-react";
 import type { Profile, CVConfiguration } from "@/types";
+import { PLAN_LABELS } from "@/types";
 import Link from "next/link";
 
 interface Props {
@@ -167,7 +168,7 @@ export default function SettingsClient({ profile, userId, email, cvConfig }: Pro
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText size={14} className="text-gray-400 flex-shrink-0" />
                     <span className="text-sm text-gray-700 truncate">
-                      {cvConfig.template?.name ?? "Sin plantilla"}
+                      {(cvConfig as any).template?.name ?? "Sin plantilla"}
                     </span>
                   </div>
                   {cvConfig.accent_color && (
@@ -207,7 +208,7 @@ export default function SettingsClient({ profile, userId, email, cvConfig }: Pro
                 { label: "Correo electrónico", value: email },
                 { label: "Nombre completo",    value: profile ? `${profile.first_name} ${profile.last_name}` : "—" },
                 { label: "Usuario",            value: profile?.username_slug ?? "—" },
-                { label: "Plan actual",        value: profile?.plan === "premium" ? "⭐ Premium" : "Gratuito" },
+                { label: "Plan actual",        value: profile?.plan ? PLAN_LABELS[profile.plan] : "Gratuito" },
                 { label: "Rol",                value: profile?.role === "admin" ? "Administrador" : "Estudiante" },
                 {
                   label: "Miembro desde",

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import type { Profile } from "@/types";
+import { PLAN_LABELS } from "@/types";
 import { toast } from "sonner";
 
 interface TopBarProps { profile: Profile | null; }
@@ -79,7 +80,7 @@ export default function TopBar({ profile }: TopBarProps) {
               {profile?.first_name} {profile?.last_name}
             </p>
             <p style={{ fontSize: "11px", color: "#9ca3af", margin: "2px 0 0" }}>
-              {profile?.plan === "premium" ? "⭐ Premium" : "Plan Gratuito"}
+              {profile?.plan ? PLAN_LABELS[profile.plan] : "Plan Gratuito"}
             </p>
           </div>
         </div>

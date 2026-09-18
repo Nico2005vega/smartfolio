@@ -4,8 +4,23 @@
 // ═══════════════════════════════════════════════════════════
 
 export type UserRole = "student" | "admin";
-export type UserPlan = "free" | "premium";
+export type UserPlan = "free" | "basic" | "premium" | "business";
 export type FileType = "pdf" | "image";
+
+// ── Planes de pago ──────────────────────────────────────────
+export const PLAN_LABELS: Record<UserPlan, string> = {
+  free:     "Gratuito",
+  basic:    "Basic",
+  premium:  "⭐ Premium",
+  business: "🏢 Business",
+};
+
+export const PLAN_BADGE_CLASSES: Record<UserPlan, string> = {
+  free:     "bg-gray-100 text-gray-600",
+  basic:    "bg-blue-100 text-blue-700",
+  premium:  "bg-purple-100 text-purple-700",
+  business: "bg-amber-100 text-amber-700",
+};
 export type SkillCategory = "technical" | "soft" | "language" | "tool";
 export type SkillLevel = "basic" | "intermediate" | "advanced" | "expert";
 
@@ -147,30 +162,6 @@ export interface CVConfiguration {
   template?:         CVTemplate | null;
 }
 
-// ── Config extendida usada solo en memoria por el editor/preview de CV ────
-// (no se persiste completa en la BD, solo accent_color/template_id/id)
-export type CVFontFamilyKind = "sans" | "serif" | "mono";
-export type CVPhotoShape     = "circle" | "rounded" | "square";
-export type CVSectionStyle   = "underline" | "left-bar" | "filled" | "minimal";
-export type CVSkillsStyle    = "chips" | "dots" | "bars" | "text";
-export type CVCardStyle      = "flat" | "shadow" | "bordered" | "accent";
-export type CVDividerStyle   = "solid" | "dashed" | "dotted" | "double" | "none";
-
-export interface CVStyleConfig extends CVConfiguration {
-  font_name?:     string;
-  font_family?:   CVFontFamilyKind;
-  font_size?:     number;
-  line_height?:   number;
-  photo_shape?:   CVPhotoShape;
-  section_style?: CVSectionStyle;
-  skills_style?:  CVSkillsStyle;
-  card_style?:    CVCardStyle;
-  divider_style?: CVDividerStyle;
-  show_photo?:    boolean;
-  show_icons?:    boolean;
-  uppercase?:     boolean;
-}
-
 // ── CV Data (para generación del PDF) ─────────────────────
 export interface CVSection {
   type:    RecordType;
@@ -183,8 +174,46 @@ export interface CVData {
   profile:     Profile;
   sections:    CVSection[];
   skills:      Record<SkillCategory, Skill[]>;
-  config:      CVStyleConfig;
+  config:      CVConfiguration;
   templateKey: string;
+}
+
+// ── Planes de pago: suscripciones y match laboral con IA ───
+export interface Subscription {
+  id:               string;
+  profile_id:       string;
+  plan:             UserPlan;
+  status:           "active" | "past_due" | "canceled";
+  payment_provider: string | null;
+  external_id:      string | null;
+  started_at:       string;
+  renews_at:        string | null;
+  canceled_at:      string | null;
+  created_at:       string;
+  updated_at:       string;
+}
+
+export interface CareerInsight {
+  id:              string;
+  profile_id:      string;
+  suggested_role:  string | null;
+  seniority:       string | null;
+  keywords:        string[];
+  industry:        string | null;
+  generated_at:    string;
+}
+
+export interface JobPosting {
+  id:         string;
+  title:      string;
+  company:    string | null;
+  city:       string | null;
+  keywords:   string[];
+  seniority:  string | null;
+  apply_url:  string;
+  source:     "manual" | "aggregator";
+  is_active:  boolean;
+  created_at: string;
 }
 
 // ── Estadísticas del Dashboard ─────────────────────────────
@@ -205,6 +234,9 @@ export interface Database {
       skills:            { Row: Skill; Insert: Partial<Skill>; Update: Partial<Skill> };
       cv_templates:      { Row: CVTemplate; Insert: Partial<CVTemplate>; Update: Partial<CVTemplate> };
       cv_configurations: { Row: CVConfiguration; Insert: Partial<CVConfiguration>; Update: Partial<CVConfiguration> };
+      subscriptions:     { Row: Subscription; Insert: Partial<Subscription>; Update: Partial<Subscription> };
+      career_insights:   { Row: CareerInsight; Insert: Partial<CareerInsight>; Update: Partial<CareerInsight> };
+      job_postings:      { Row: JobPosting; Insert: Partial<JobPosting>; Update: Partial<JobPosting> };
     };
   };
 }

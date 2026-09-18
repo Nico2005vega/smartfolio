@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, GraduationCap, LayoutDashboard, User,
+  X, GraduationCap, LayoutDashboard, User,
   BookOpen, FileText, Palette, Settings, Shield, Tag
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PLAN_LABELS, type UserPlan } from "@/types";
 
 const navItems = [
   { href: "/dashboard",  label: "Dashboard",   icon: LayoutDashboard },
@@ -28,7 +29,7 @@ interface Props {
   firstName: string;
   lastName:  string;
   email:     string;
-  plan:      string;
+  plan:      UserPlan;
   photoUrl:  string | null;
 }
 
@@ -38,13 +39,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
   const router   = useRouter();
   const supabase = createClient();
 
-  /* Cierra el drawer al cambiar de ruta — ajustado en render en vez de en un
-     efecto, para no disparar un render extra (ver "you-might-not-need-an-effect") */
-  const [prevPathname, setPrevPathname] = useState(pathname);
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
-    setOpen(false);
-  }
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -63,24 +58,6 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
 
   return (
     <>
-      {/* Botón hamburguesa — solo en móvil, abre el drawer */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="lg:hidden"
-          aria-label="Abrir menú"
-          style={{
-            position: "fixed", top: 10, left: 12, zIndex: 50,
-            width: 40, height: 40, borderRadius: 10,
-            background: "white", border: "1px solid #f0f0f0",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-          }}
-        >
-          <Menu size={20} color="#374151" />
-        </button>
-      )}
-
       {/* Overlay oscuro */}
       {open && (
         <div
@@ -118,7 +95,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
             </div>
             <div>
               <p style={{ fontWeight: "700", fontSize: "15px", color: "#111827", margin: 0 }}>Smartfolio</p>
-              <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}></p>
+              <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>UTS · BAN 00329</p>
             </div>
           </div>
           <button onClick={() => setOpen(false)}
@@ -149,7 +126,7 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
               {firstName} {lastName}
             </p>
             <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-              {plan === "premium" ? "⭐ Premium" : "Plan Gratuito"}
+              {PLAN_LABELS[plan]}
             </p>
           </div>
         </div>

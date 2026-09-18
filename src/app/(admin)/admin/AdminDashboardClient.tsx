@@ -1,8 +1,9 @@
 "use client";
 import { Users, FileText, BookOpen, Eye } from "lucide-react";
 import type { Profile } from "@/types";
+import { PLAN_LABELS, PLAN_BADGE_CLASSES } from "@/types";
 
-type RecentUser = Pick<Profile, "id"|"first_name"|"last_name"|"plan"|"role"|"created_at"|"visit_count">;
+type RecentUser = Pick<Profile, "id" | "first_name" | "last_name" | "plan" | "role" | "created_at" | "visit_count">;
 
 interface Props {
   totalUsers:   number;
@@ -176,12 +177,8 @@ export default function AdminDashboardClient({
                     {u.first_name} {u.last_name}
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      u.plan === "premium"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {u.plan === "premium" ? "⭐ Premium" : "Gratuito"}
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLAN_BADGE_CLASSES[u.plan]}`}>
+                      {PLAN_LABELS[u.plan]}
                     </span>
                   </td>
                   <td className="px-5 py-3 text-gray-500 text-xs capitalize">{u.role}</td>
