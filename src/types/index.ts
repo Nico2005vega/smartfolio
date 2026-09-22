@@ -165,7 +165,7 @@ export interface CVConfiguration {
 // ── Configuración de estilo extendida (CV Builder) ──────────
 // Extiende CVConfiguration con las opciones de personalización
 // visual del cv-builder (fuente, tamaños, estilos de sección, etc.)
-export interface CVStyleConfig extends CVConfiguration {
+  export interface CVStyleConfig extends CVConfiguration {
   font_name?:      string;
   font_family?:    "serif" | "mono" | "sans";
   font_size?:      number;
