@@ -1,3 +1,4 @@
+
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { CVData } from "@/types";
 import { formatDate } from "@/lib/utils";
