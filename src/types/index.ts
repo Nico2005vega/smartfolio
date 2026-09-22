@@ -162,6 +162,24 @@ export interface CVConfiguration {
   template?:         CVTemplate | null;
 }
 
+// ── Configuración de estilo extendida (CV Builder) ──────────
+// Extiende CVConfiguration con las opciones de personalización
+// visual del cv-builder (fuente, tamaños, estilos de sección, etc.)
+export interface CVStyleConfig extends CVConfiguration {
+  font_name?:      string;
+  font_family?:    "serif" | "mono" | "sans";
+  font_size?:      number;
+  line_height?:    number;
+  photo_shape?:    "circle" | "rounded" | "square";
+  section_style?:  "underline" | "left-bar" | "filled" | "minimal";
+  skills_style?:   "chips" | "dots" | "bars" | "text";
+  card_style?:     "flat" | "shadow" | "bordered" | "accent";
+  divider_style?:  "solid" | "dashed" | "dotted" | "double" | "none";
+  show_photo?:     boolean;
+  show_icons?:     boolean;
+  uppercase?:      boolean;
+}
+
 // ── CV Data (para generación del PDF) ─────────────────────
 export interface CVSection {
   type:    RecordType;
