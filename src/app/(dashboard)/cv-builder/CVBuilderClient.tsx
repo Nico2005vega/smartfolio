@@ -420,7 +420,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
             <button onClick={save} disabled={saving} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-60" style={{background:"#16a34a"}}>
               {saving?<><Loader2 size={14} className="animate-spin"/> Guardando</>:<><CheckCircle2 size={14}/> Guardar</>}
             </button>
-            <PDFDownloadButton data={cvData} fileName={`CV_${profile.first_name}_${profile.last_name}_Smartfolio.pdf`} templateKey={tplKey}/>
+            <PDFDownloadButton data={cvData} fileName={`CV_${profile.first_name}_${profile.last_name}_Smartfolio.pdf`} templateKey={tplKey} plan={profile?.plan ?? "free"}/>
           </div>
         </div>
 
@@ -717,4 +717,4 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
       </div>
     </>
   );
-} 
+}

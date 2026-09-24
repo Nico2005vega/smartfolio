@@ -1,10 +1,12 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Upload, FileText, ImageIcon, X, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, Upload, FileText, ImageIcon, X, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { canAddMore, getLimit } from "@/lib/plans";
+import type { UserPlan } from "@/types";
 
 const ACCEPTED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_MB   = 10;
@@ -26,9 +28,30 @@ export default function DocumentUploadPage() {
   const [dragging,  setDragging]  = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done,      setDone]      = useState(false);
+  const [checking,  setChecking]  = useState(true);
+  const [limitInfo, setLimitInfo] = useState<{ canAdd: boolean; limit: number | null }>({ canAdd: true, limit: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const router   = useRouter();
+
+  useEffect(() => {
+    const checkLimit = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [{ data: profile }, { count }] = await Promise.all([
+        supabase.from("profiles").select("plan").eq("id", user.id).single(),
+        supabase.from("documents").select("id", { count: "exact", head: true }).eq("profile_id", user.id),
+      ]);
+      const plan = (profile?.plan as UserPlan) ?? "free";
+      setLimitInfo({
+        canAdd: canAddMore("documents", plan, count ?? 0),
+        limit: getLimit("documents", plan),
+      });
+      setChecking(false);
+    };
+    checkLimit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFile = (f: File) => {
     if (!ACCEPTED.includes(f.type)) {
@@ -108,8 +131,38 @@ export default function DocumentUploadPage() {
         PDF, JPG, PNG o WEBP · máximo {MAX_MB} MB
       </p>
 
+      {/* Verificando límite del plan */}
+      {checking && (
+        <div style={{ textAlign: "center", padding: "48px 24px", color: "#9ca3af", fontSize: "13px" }}>
+          <Loader2 size={20} className="animate-spin" style={{ margin: "0 auto 10px" }} />
+          Verificando tu plan...
+        </div>
+      )}
+
+      {/* Límite del plan alcanzado */}
+      {!checking && !limitInfo.canAdd && (
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "40px 24px", textAlign: "center" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "14px", background: "#faf5ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <Sparkles size={26} color="#7c3aed" />
+          </div>
+          <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#111827", margin: "0 0 6px" }}>
+            Llegaste al límite de tu plan
+          </h2>
+          <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 20px" }}>
+            Tu plan actual permite hasta {limitInfo.limit} documento{limitInfo.limit === 1 ? "" : "s"}. Actualiza tu plan para subir más.
+          </p>
+          <Link href="/pricing" style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            padding: "11px 20px", borderRadius: "12px", background: "#7c3aed",
+            color: "white", fontSize: "13px", fontWeight: "700", textDecoration: "none",
+          }}>
+            <Sparkles size={14} /> Ver planes
+          </Link>
+        </div>
+      )}
+
       {/* Zona drag & drop */}
-      {!file && !done && (
+      {!checking && limitInfo.canAdd && !file && !done && (
         <div
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}

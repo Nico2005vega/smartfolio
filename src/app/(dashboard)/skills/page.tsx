@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import SkillsManager from "@/components/forms/SkillsManager";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import type { UserPlan } from "@/types";
 
 export const metadata = { title: "Mis Habilidades" };
 
@@ -11,11 +12,10 @@ export default async function SkillsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: skills } = await supabase
-    .from("skills")
-    .select("*")
-    .eq("profile_id", user.id)
-    .order("sort_order");
+  const [{ data: skills }, { data: profile }] = await Promise.all([
+    supabase.from("skills").select("*").eq("profile_id", user.id).order("sort_order"),
+    supabase.from("profiles").select("plan").eq("id", user.id).single(),
+  ]);
 
   return (
     <div className="max-w-3xl mx-auto animate-fade-in">
@@ -28,7 +28,7 @@ export default async function SkillsPage() {
         <p className="text-gray-500 text-sm mb-7">
           Agrega tus habilidades técnicas, idiomas y herramientas. Aparecerán en tu CV y portafolio.
         </p>
-        <SkillsManager profileId={user.id} initialSkills={skills ?? []} />
+        <SkillsManager profileId={user.id} initialSkills={skills ?? []} plan={(profile?.plan as UserPlan) ?? "free"} />
       </div>
     </div>
   );

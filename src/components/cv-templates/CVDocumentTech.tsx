@@ -3,9 +3,9 @@ import type { CVData } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
 
-interface Props { data: CVData; }
+interface Props { data: CVData; watermark?: boolean; }
 
-export default function CVDocumentTech({ data }: Props) {
+export default function CVDocumentTech({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent  = config?.accent_color ?? "#06b6d4";
   const darkBg  = "#0f172a";
@@ -39,6 +39,16 @@ export default function CVDocumentTech({ data }: Props) {
   return (
     <Document title={`CV Tech — ${profile.first_name} ${profile.last_name}`} author="Smartfolio · BAN 00329">
       <Page size="A4" style={s.page}>
+        {watermark && (
+          <Text style={{
+            position: "absolute", top: "48%", left: 0, right: 0,
+            textAlign: "center", fontSize: 58, color: "#00000014",
+            fontFamily: "Helvetica-Bold", transform: "rotate(-35deg)",
+          }}>
+            SMARTFOLIO · PLAN GRATUITO
+          </Text>
+        )}
+
 
         {/* ── Sidebar ───────────────────────────────────── */}
         <View style={s.sidebar}>

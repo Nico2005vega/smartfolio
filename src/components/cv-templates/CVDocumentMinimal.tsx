@@ -2,9 +2,9 @@ import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { CVData } from "@/types";
 import { formatDate } from "@/lib/utils";
 
-interface Props { data: CVData; }
+interface Props { data: CVData; watermark?: boolean; }
 
-export default function CVDocumentMinimal({ data }: Props) {
+export default function CVDocumentMinimal({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#18181b";
   const allSkills = Object.values(skills).flat();
@@ -30,6 +30,16 @@ export default function CVDocumentMinimal({ data }: Props) {
   return (
     <Document title={`CV Minimalista — ${profile.first_name} ${profile.last_name}`} author="Smartfolio · BAN 00329">
       <Page size="A4" style={s.page}>
+        {watermark && (
+          <Text style={{
+            position: "absolute", top: "48%", left: 0, right: 0,
+            textAlign: "center", fontSize: 58, color: "#00000014",
+            fontFamily: "Helvetica-Bold", transform: "rotate(-35deg)",
+          }}>
+            SMARTFOLIO · PLAN GRATUITO
+          </Text>
+        )}
+
 
         {/* Header */}
         <Text style={s.name}>{profile.first_name} {profile.last_name}</Text>

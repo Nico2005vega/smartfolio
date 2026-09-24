@@ -5,11 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { skillSchema, type SkillFormData } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Code2, Brain, Globe, Wrench } from "lucide-react";
-import type { Skill, SkillCategory, SkillLevel } from "@/types";
+import { Plus, Trash2, Loader2, Code2, Brain, Globe, Wrench, Sparkles } from "lucide-react";
+import Link from "next/link";
+import type { Skill, SkillCategory, SkillLevel, UserPlan } from "@/types";
 import { SKILL_CATEGORY_LABELS, SKILL_LEVEL_LABELS } from "@/types";
+import { canAddMore, getLimit } from "@/lib/plans";
 
-interface Props { profileId: string; initialSkills: Skill[]; }
+interface Props { profileId: string; initialSkills: Skill[]; plan: UserPlan; }
 
 const CATEGORIES = Object.entries(SKILL_CATEGORY_LABELS) as [SkillCategory, string][];
 const LEVELS     = Object.entries(SKILL_LEVEL_LABELS)    as [SkillLevel,    string][];
@@ -30,12 +32,15 @@ const LEVEL_PCT: Record<string, number> = Object.fromEntries(
   ])
 );
 
-export default function SkillsManager({ profileId, initialSkills }: Props) {
+export default function SkillsManager({ profileId, initialSkills, plan }: Props) {
   const [skills,         setSkills]         = useState<Skill[]>(initialSkills);
   const [activeCategory, setActiveCategory] = useState<SkillCategory>("technical");
   const [adding,         setAdding]         = useState(false);
   const [deletingId,     setDeletingId]     = useState<string | null>(null);
   const supabase = createClient();
+
+  const canAdd = canAddMore("skills", plan, skills.length);
+  const limit  = getLimit("skills", plan);
 
   const {
     register, handleSubmit, reset,
@@ -232,12 +237,24 @@ export default function SkillsManager({ profileId, initialSkills }: Props) {
             </button>
           </div>
         </form>
-      ) : (
+      ) : canAdd ? (
         <button
           onClick={() => setAdding(true)}
           className="flex items-center gap-2 w-full px-4 py-3 text-sm font-medium rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-all">
           <Plus size={16} /> Agregar habilidad
         </button>
+      ) : (
+        <div className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-xl border-2 border-dashed"
+          style={{ borderColor: "#e9d5ff", background: "#faf5ff" }}>
+          <span className="text-sm text-purple-700">
+            Llegaste al límite de tu plan ({limit} habilidades)
+          </span>
+          <Link href="/pricing"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex-shrink-0"
+            style={{ background: "#7c3aed" }}>
+            <Sparkles size={12} /> Ver planes
+          </Link>
+        </div>
       )}
 
       {skills.length > 0 && (

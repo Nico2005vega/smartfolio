@@ -3,9 +3,9 @@ import type { CVData } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
 
-interface Props { data: CVData; }
+interface Props { data: CVData; watermark?: boolean; }
 
-export default function CVDocumentCreative({ data }: Props) {
+export default function CVDocumentCreative({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#7c3aed";
 
@@ -40,6 +40,16 @@ export default function CVDocumentCreative({ data }: Props) {
   return (
     <Document title={`CV Creativo — ${profile.first_name} ${profile.last_name}`} author="Smartfolio · BAN 00329">
       <Page size="A4" style={s.page}>
+        {watermark && (
+          <Text style={{
+            position: "absolute", top: "48%", left: 0, right: 0,
+            textAlign: "center", fontSize: 58, color: "#00000014",
+            fontFamily: "Helvetica-Bold", transform: "rotate(-35deg)",
+          }}>
+            SMARTFOLIO · PLAN GRATUITO
+          </Text>
+        )}
+
 
         {/* Header */}
         <View style={s.header}>

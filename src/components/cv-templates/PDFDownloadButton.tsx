@@ -2,13 +2,15 @@
 import { useState, type ComponentType, type ReactElement } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { CVData } from "@/types";
+import type { CVData, UserPlan } from "@/types";
 import type { DocumentProps } from "@react-pdf/renderer";
+import { hasFeature } from "@/lib/plans";
 
 interface Props {
   data:        CVData;
   fileName:    string;
   templateKey: string;
+  plan:        UserPlan;
 }
 
 async function imageToBase64(url: string): Promise<string> {
@@ -26,7 +28,7 @@ async function imageToBase64(url: string): Promise<string> {
 }
 
 /* ── Módulos PDF disponibles ─────────────────────────────── */
-const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data: CVData }> }>> = {
+const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data: CVData; watermark?: boolean }> }>> = {
   modern:    () => import("./CVDocumentModern"),
   classic:   () => import("./CVDocumentClassic"),
   executive: () => import("./CVDocumentExecutive"),
@@ -42,8 +44,9 @@ const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data:
   academic:  () => import("./CVDocumentClassic"),
 };
 
-export default function PDFDownloadButton({ data, fileName, templateKey }: Props) {
+export default function PDFDownloadButton({ data, fileName, templateKey, plan }: Props) {
   const [loading, setLoading] = useState(false);
+  const watermark = !hasFeature("pdfWithoutWatermark", plan);
 
   const handleDownload = async () => {
     setLoading(true);
@@ -68,7 +71,7 @@ export default function PDFDownloadButton({ data, fileName, templateKey }: Props
       const mod     = await PDF_MODULES[key]();
       const DocComp = mod.default;
 
-      const blob = await pdf(<DocComp data={dataWithBase64} /> as ReactElement<DocumentProps>).toBlob();
+      const blob = await pdf(<DocComp data={dataWithBase64} watermark={watermark} /> as ReactElement<DocumentProps>).toBlob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href     = url;
