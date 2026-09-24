@@ -7,7 +7,6 @@ import { RECORD_TYPE_LABELS, PLAN_LABELS } from "@/types";
 import { planAtLeast, hasFeature } from "@/lib/plan";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   Loader2, CheckCircle2, Eye, Share2, FileText,
   Layout, Palette, Sparkles, SlidersHorizontal,
@@ -93,6 +92,26 @@ const PALETTES = [
   "#d97706","#65a30d","#0891b2","#475569","#1e293b","#09090b",
   "#b7882c","#0f766e","#9333ea","#c2410c","#1d4ed8","#be185d",
 ];
+
+// ── Personalización escalonada por plan ─────────────────────
+// Cada plan desbloquea progresivamente más opciones de cada control.
+// No es todo-o-nada: hasta Free puede cambiar algo y verlo reflejado.
+const FONT_LIMITS:          Record<UserPlan, number> = { free: 1, basic: 8, premium: 16, business: 16 };
+const COLOR_LIMITS:         Record<UserPlan, number> = { free: 3, basic: 9, premium: 18, business: 18 };
+const DIVIDER_LIMITS:       Record<UserPlan, number> = { free: 1, basic: 3, premium: 5,  business: 5  };
+const PHOTO_SHAPE_LIMITS:   Record<UserPlan, number> = { free: 1, basic: 2, premium: 3,  business: 3  };
+const SECTION_STYLE_LIMITS: Record<UserPlan, number> = { free: 1, basic: 2, premium: 4,  business: 4  };
+const SKILLS_STYLE_LIMITS:  Record<UserPlan, number> = { free: 1, basic: 2, premium: 4,  business: 4  };
+const CARD_STYLE_LIMITS:    Record<UserPlan, number> = { free: 1, basic: 2, premium: 4,  business: 4  };
+
+function isLockedAt(limits: Record<UserPlan, number>, index: number, plan: UserPlan): boolean {
+  return index >= limits[plan];
+}
+function minPlanForIndex(limits: Record<UserPlan, number>, index: number): UserPlan {
+  if (index < limits.free) return "free";
+  if (index < limits.basic) return "basic";
+  return "premium";
+}
 
 interface TplMeta { key:string; name:string; category:string; description:string; tags:string[]; ats:number; accent:string; minPlan:UserPlan; }
 // Reparto acorde a lo que promete /pricing: Free=1, Basic=6 (las originales), Premium/Business=12 (todas)
@@ -305,21 +324,13 @@ function Divider() {
   return <div className="border-t border-gray-100 my-4"/>;
 }
 
-function LockedCustomizationPanel({ label }: { label: string }) {
+function LockedControlOverlay({ onClick, minPlan }: { onClick: (minPlan: UserPlan) => void; minPlan: UserPlan }) {
   return (
-    <div className="text-center py-10 px-4">
-      <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-3">
-        <Lock size={20} className="text-purple-600"/>
-      </div>
-      <p className="text-sm font-bold text-gray-800 mb-1.5">{label} es una función Premium</p>
-      <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-        Actualiza tu plan para personalizar fuentes, colores y el diseño completo de tu CV.
-      </p>
-      <Link href="/pricing"
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white"
-        style={{ background: "#7c3aed" }}>
-        <Sparkles size={12}/> Ver planes
-      </Link>
+    <div onClick={()=>onClick(minPlan)} className="absolute inset-0 rounded-2xl flex items-center justify-end pr-3 cursor-pointer"
+      style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(1px)" }}>
+      <span className="flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded-full">
+        <Lock size={10}/> {PLAN_LABELS[minPlan]}
+      </span>
     </div>
   );
 }
@@ -337,8 +348,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const supabase = createClient();
   const router   = useRouter();
   const userPlan: UserPlan = profile?.plan ?? "free";
-  const unlockedCustomization = hasFeature("fullCustomization", userPlan);
-  const CUSTOMIZATION_TABS: Tab[] = ["fuentes", "estilo", "diseno"];
+
 
   const handleLockedTemplateClick = (minPlan: UserPlan) => {
     toast.error(`Esta plantilla requiere el plan ${PLAN_LABELS[minPlan]}`, {
@@ -477,17 +487,13 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   {id:"estilo",   label:"Estilo",    icon:<Palette size={10}/>},
                   {id:"diseno",   label:"Diseño",    icon:<Sparkles size={10}/>},
                   {id:"secciones",label:"Secciones", icon:<SlidersHorizontal size={10}/>},
-                ] as {id:Tab;label:string;icon:React.ReactNode}[]).map(({id,label,icon})=>{
-                  const tabLocked = CUSTOMIZATION_TABS.includes(id) && !unlockedCustomization;
-                  return (
+                ] as {id:Tab;label:string;icon:React.ReactNode}[]).map(({id,label,icon})=>(
                   <button key={id} onClick={()=>setTab(id)}
                     className={cn("flex-1 flex items-center justify-center gap-0.5 py-2 px-0.5 rounded-2xl text-[10px] font-semibold transition-all",
                       tab===id?"bg-white text-gray-900 shadow-sm":"text-gray-400 hover:text-gray-600")}>
                     {icon}<span className="hidden sm:inline ml-0.5">{label}</span>
-                    {tabLocked && <Lock size={9} className="text-purple-400 flex-shrink-0"/>}
                   </button>
-                  );
-                })}
+                ))}
               </div>
 
               <div className="p-4 space-y-4 max-h-[72vh] overflow-y-auto">
@@ -531,7 +537,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {tab==="fuentes" && (unlockedCustomization ? (
+                {tab==="fuentes" && (
                   <>
                     <STitle icon={<Type size={10}/>} text="Familia tipográfica"/>
                     <div className="flex gap-1.5 mb-3">
@@ -544,9 +550,12 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                       ))}
                     </div>
                     <div className="space-y-2">
-                      {filteredFonts.map(f=>(
-                        <button key={f.name} onClick={()=>{setFontName(f.name);setFontFamily(f.family);}}
-                          className={cn("w-full text-left rounded-2xl border-2 overflow-hidden transition-all",
+                      {filteredFonts.map(f=>{
+                        const fullIndex = FONTS.findIndex(ff=>ff.name===f.name);
+                        const locked = isLockedAt(FONT_LIMITS, fullIndex, userPlan);
+                        return (
+                        <button key={f.name} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(FONT_LIMITS,fullIndex));return;} setFontName(f.name);setFontFamily(f.family);}}
+                          className={cn("relative w-full text-left rounded-2xl border-2 overflow-hidden transition-all",
                             fontName===f.name?"border-green-500 shadow-sm":"border-gray-100 hover:border-gray-200 hover:shadow-sm")}>
                           <div className={cn("px-4 py-3",fontName===f.name?"bg-green-50":"bg-gray-50")} style={{fontFamily:f.family}}>
                             <p className="text-2xl font-bold text-gray-800 leading-none">Aa Bb Cc</p>
@@ -559,39 +568,52 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                             </div>
                             {fontName===f.name ? <CheckCircle2 size={14} className="text-green-500 flex-shrink-0"/> : <span className="text-[10px] text-gray-300">Usar</span>}
                           </div>
+                          {locked && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan={minPlanForIndex(FONT_LIMITS,fullIndex)}/>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                     <Divider/>
-                    <Slider min={10} max={16} step={0.5} value={fontSize} onChange={setFSize} label="Tamaño de fuente" format={v=>`${v}px`}/>
+                    <div className="relative rounded-2xl">
+                      <Slider min={10} max={16} step={0.5} value={fontSize} onChange={setFSize} label="Tamaño de fuente" format={v=>`${v}px`}/>
+                      {!planAtLeast(userPlan,"basic") && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan="basic"/>}
+                    </div>
                     <Divider/>
-                    <Slider min={1.2} max={2.0} step={0.05} value={lineHeight} onChange={setLH} label="Interlineado" format={v=>`${v.toFixed(2)}×`}/>
+                    <div className="relative rounded-2xl">
+                      <Slider min={1.2} max={2.0} step={0.05} value={lineHeight} onChange={setLH} label="Interlineado" format={v=>`${v.toFixed(2)}×`}/>
+                      {!planAtLeast(userPlan,"basic") && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan="basic"/>}
+                    </div>
                     <Divider/>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                    <div className="relative flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
                       <div>
                         <p className="text-xs font-semibold text-gray-700">Nombre en MAYÚSCULAS</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">{uppercase?"JUAN PÉREZ":"Juan Pérez"}</p>
                       </div>
                       <Toggle checked={uppercase} onChange={setUpper}/>
+                      {!planAtLeast(userPlan,"basic") && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan="basic"/>}
                     </div>
                   </>
-                ) : <LockedCustomizationPanel label="Fuentes"/>)}
+                )}
 
-                {tab==="estilo" && (unlockedCustomization ? (
+                {tab==="estilo" && (
                   <>
                     <STitle icon={<Palette size={10}/>} text="Color de acento"/>
                     <div className="grid grid-cols-6 gap-2">
-                      {PALETTES.map(hex=>(
-                        <button key={hex} onClick={()=>setAccent(hex)}
-                          className={cn("aspect-square rounded-xl transition-all hover:scale-110",
+                      {PALETTES.map((hex,idx)=>{
+                        const locked = isLockedAt(COLOR_LIMITS, idx, userPlan);
+                        return (
+                        <button key={hex} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(COLOR_LIMITS,idx));return;} setAccent(hex);}}
+                          className={cn("relative aspect-square rounded-xl transition-all hover:scale-110 overflow-hidden",
                             accent===hex?"ring-2 ring-offset-2 ring-gray-800 scale-110 shadow-lg":"hover:shadow-md")}
                           style={{background:hex}}>
                           {accent===hex&&<div className="flex items-center justify-center h-full"><div className="w-2.5 h-2.5 bg-white rounded-full shadow"/></div>}
+                          {locked && <div className="absolute inset-0 flex items-center justify-center" style={{background:"rgba(255,255,255,.55)"}}><Lock size={11} className="text-gray-700"/></div>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
-                    <div className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-2xl">
-                      <input type="color" value={accent} onChange={e=>setAccent(e.target.value)}
+                    <div className="relative flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-2xl">
+                      <input type="color" value={accent} onChange={e=>setAccent(e.target.value)} disabled={!hasFeature("fullCustomization",userPlan)}
                         className="w-9 h-9 rounded-xl cursor-pointer border-0 bg-transparent flex-shrink-0" style={{padding:0}}/>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-mono font-bold text-gray-700">{accent.toUpperCase()}</p>
@@ -601,23 +623,28 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         <div className="h-1/2" style={{background:accent}}/>
                         <div className="h-1/2 bg-white flex items-center px-1.5"><div className="h-1 w-5 bg-gray-200 rounded-full"/></div>
                       </div>
+                      {!hasFeature("fullCustomization",userPlan) && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan="premium"/>}
                     </div>
                     <Divider/>
                     <STitle icon={<Minus size={10}/>} text="Estilo de separadores"/>
                     <div className="grid grid-cols-5 gap-1.5">
-                      {(["solid","dashed","dotted","double","none"] as const).map(ds=>(
-                        <button key={ds} onClick={()=>setDivider(ds)}
-                          className={cn("p-2 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all",
+                      {(["solid","dashed","dotted","double","none"] as const).map((ds,idx)=>{
+                        const locked = isLockedAt(DIVIDER_LIMITS, idx, userPlan);
+                        return (
+                        <button key={ds} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(DIVIDER_LIMITS,idx));return;} setDivider(ds);}}
+                          className={cn("relative p-2 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all",
                             dividerStyle===ds?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
                           <div style={{width:"100%",height:0,borderTop:`2px solid ${dividerStyle===ds?"#16a34a":"#d1d5db"}`,borderTopStyle:(ds==="none"?"solid":ds) as React.CSSProperties["borderTopStyle"],opacity:ds==="none"?0:1}}/>
                           <span className="text-[9px] font-semibold text-gray-500 capitalize">{ds}</span>
+                          {locked && <div className="absolute top-1 right-1"><Lock size={9} className="text-purple-400"/></div>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
-                ) : <LockedCustomizationPanel label="Estilo"/>)}
+                )}
 
-                {tab==="diseno" && (unlockedCustomization ? (
+                {tab==="diseno" && (
                   <>
                     <div className="flex items-center justify-between mb-1">
                       <STitle icon={<User size={10}/>} text="Foto de perfil"/>
@@ -625,16 +652,20 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                     </div>
                     {showPhoto&&(
                       <div className="grid grid-cols-3 gap-2">
-                        {[{key:"circle",label:"Círculo",radius:"50%"},{key:"rounded",label:"Redondeado",radius:"10px"},{key:"square",label:"Cuadrado",radius:"2px"}].map(({key,label,radius})=>(
-                          <button key={key} onClick={()=>setPhotoShape(key as "circle"|"rounded"|"square")}
-                            className={cn("p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all",
+                        {[{key:"circle",label:"Círculo",radius:"50%"},{key:"rounded",label:"Redondeado",radius:"10px"},{key:"square",label:"Cuadrado",radius:"2px"}].map(({key,label,radius},idx)=>{
+                          const locked = isLockedAt(PHOTO_SHAPE_LIMITS, idx, userPlan);
+                          return (
+                          <button key={key} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(PHOTO_SHAPE_LIMITS,idx));return;} setPhotoShape(key as "circle"|"rounded"|"square");}}
+                            className={cn("relative p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all",
                               photoShape===key?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
                             <div className="w-9 h-9 bg-gradient-to-br from-gray-300 to-gray-200 flex items-center justify-center" style={{borderRadius:radius}}>
                               <User size={14} className="text-gray-500"/>
                             </div>
                             <span className="text-[10px] font-semibold text-gray-600">{label}</span>
+                            {locked && <div className="absolute top-1 right-1"><Lock size={9} className="text-purple-400"/></div>}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     <Divider/>
@@ -645,14 +676,18 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"left-bar", label:"Barra lateral", render:(c:string)=>(<div className="px-2 py-2 flex items-center gap-1.5"><div className="w-0.5 h-4 rounded-full" style={{background:c}}/><p className="text-[9px] font-bold text-gray-700 tracking-widest uppercase">Educación</p></div>)},
                         {key:"filled",   label:"Fondo relleno", render:(c:string)=>(<div className="mx-2 my-1.5 px-2 py-1 rounded-md" style={{background:`${c}18`}}><p className="text-[9px] font-bold tracking-widest uppercase" style={{color:c}}>Educación</p></div>)},
                         {key:"minimal",  label:"Minimalista",   render:(_:string)=>(<div className="px-2 py-2"><p className="text-[9px] font-bold text-gray-400 tracking-widest uppercase">Educación</p></div>)},
-                      ].map(({key,label,render})=>(
-                        <button key={key} onClick={()=>setSectionStyle(key as "underline"|"left-bar"|"filled"|"minimal")}
-                          className={cn("rounded-2xl border-2 overflow-hidden text-left transition-all",
+                      ].map(({key,label,render},idx)=>{
+                        const locked = isLockedAt(SECTION_STYLE_LIMITS, idx, userPlan);
+                        return (
+                        <button key={key} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(SECTION_STYLE_LIMITS,idx));return;} setSectionStyle(key as "underline"|"left-bar"|"filled"|"minimal");}}
+                          className={cn("relative rounded-2xl border-2 overflow-hidden text-left transition-all",
                             sectionStyle===key?"border-green-500":"border-gray-100 hover:border-gray-200")}>
                           <div className="bg-gray-50 min-h-[40px] border-b border-gray-100">{render(accent)}</div>
                           <p className="text-[10px] font-semibold text-gray-600 p-2">{label}</p>
+                          {locked && <div className="absolute top-1.5 right-1.5"><Lock size={9} className="text-purple-400"/></div>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                     <Divider/>
                     <STitle icon={<Tag size={10}/>} text="Habilidades"/>
@@ -662,14 +697,18 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"dots", label:"Puntos",    render:(_:string)=>(<div className="p-2 space-y-0.5">{["React","Node","CSS"].map(s=>(<div key={s} className="flex items-center gap-1 text-[9px] text-gray-600"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0"/>{s}</div>))}</div>)},
                         {key:"bars", label:"Barras",    render:(c:string)=>(<div className="p-2 space-y-1.5">{[["React",80],["Node",60]].map(([s,v])=>(<div key={s as string}><p className="text-[8px] text-gray-500 mb-0.5">{s as string}</p><div className="h-1 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${v}%`,background:c}}/></div></div>))}</div>)},
                         {key:"text", label:"Texto",     render:(_:string)=>(<div className="p-2"><p className="text-[9px] text-gray-500 leading-relaxed">React · Node · CSS · Git</p></div>)},
-                      ].map(({key,label,render})=>(
-                        <button key={key} onClick={()=>setSkillsStyle(key as "chips"|"dots"|"bars"|"text")}
-                          className={cn("rounded-2xl border-2 overflow-hidden text-left transition-all",
+                      ].map(({key,label,render},idx)=>{
+                        const locked = isLockedAt(SKILLS_STYLE_LIMITS, idx, userPlan);
+                        return (
+                        <button key={key} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(SKILLS_STYLE_LIMITS,idx));return;} setSkillsStyle(key as "chips"|"dots"|"bars"|"text");}}
+                          className={cn("relative rounded-2xl border-2 overflow-hidden text-left transition-all",
                             skillsStyle===key?"border-green-500":"border-gray-100 hover:border-gray-200")}>
                           <div className="bg-gray-50 min-h-[48px] border-b border-gray-100">{render(accent)}</div>
                           <p className="text-[10px] font-semibold text-gray-600 p-2">{label}</p>
+                          {locked && <div className="absolute top-1.5 right-1.5"><Lock size={9} className="text-purple-400"/></div>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                     <Divider/>
                     <STitle icon={<BarChart2 size={10}/>} text="Estilo de entradas"/>
@@ -679,28 +718,33 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                         {key:"shadow",   label:"Sombra",   style:{boxShadow:"0 1px 4px rgba(0,0,0,.1)"} as React.CSSProperties},
                         {key:"bordered", label:"Bordeado", style:{border:"1px solid #e5e7eb"} as React.CSSProperties},
                         {key:"accent",   label:"Acento",   style:{} as React.CSSProperties},
-                      ].map(({key,label,style})=>(
-                        <button key={key} onClick={()=>setCardStyle(key as "flat"|"shadow"|"bordered"|"accent")}
-                          className={cn("p-3 rounded-2xl border-2 text-left transition-all",
+                      ].map(({key,label,style},idx)=>{
+                        const locked = isLockedAt(CARD_STYLE_LIMITS, idx, userPlan);
+                        return (
+                        <button key={key} onClick={()=>{ if(locked){handleLockedTemplateClick(minPlanForIndex(CARD_STYLE_LIMITS,idx));return;} setCardStyle(key as "flat"|"shadow"|"bordered"|"accent");}}
+                          className={cn("relative p-3 rounded-2xl border-2 text-left transition-all",
                             cardStyle===key?"border-green-500 bg-green-50":"border-gray-100 hover:border-gray-200")}>
                           <div className="h-6 rounded-lg mb-1.5 flex items-center px-2 bg-white"
                             style={{...style,...(key==="accent"?{background:`${accent}14`,borderLeft:`3px solid ${accent}`}:{})}}>
                             <div className="h-1 w-8 bg-gray-200 rounded-full"/>
                           </div>
                           <span className="text-[10px] font-semibold text-gray-600">{label}</span>
+                          {locked && <div className="absolute top-1.5 right-1.5"><Lock size={9} className="text-purple-400"/></div>}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                     <Divider/>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                    <div className="relative flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
                       <div>
                         <p className="text-xs font-semibold text-gray-700">Íconos en secciones</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">📚 Educación vs solo texto</p>
                       </div>
                       <Toggle checked={showIcons} onChange={setShowIcons}/>
+                      {!planAtLeast(userPlan,"basic") && <LockedControlOverlay onClick={handleLockedTemplateClick} minPlan="basic"/>}
                     </div>
                   </>
-                ) : <LockedCustomizationPanel label="Diseño"/>)}
+                )}
 
                 {tab==="secciones" && (
                   <>
