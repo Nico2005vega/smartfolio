@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   GraduationCap, LayoutDashboard, User, BookOpen,
-  FileText, Palette, Settings, Shield, Tag, LogOut, Sparkles
+  FileText, Palette, Settings, Shield, Tag, LogOut, Sparkles, BarChart3
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/academic",   label: "Formación",   icon: BookOpen },
   { href: "/documents",  label: "Documentos",  icon: FileText },
   { href: "/cv-builder", label: "Generar CV",  icon: Palette },
+  { href: "/analytics",  label: "Analíticas",  icon: BarChart3 },
   { href: "/pricing",    label: "Planes",      icon: Sparkles },
 ];
 
