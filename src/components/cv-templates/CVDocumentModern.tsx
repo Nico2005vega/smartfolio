@@ -1,199 +1,218 @@
+import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CVData, CVStyleConfig, AcademicRecord, Skill } from "@/types";
 import { formatDate } from "@/lib/utils";
-import { MapPin, Phone, Globe, Link as LinkIcon, Mail } from "lucide-react";
 
-interface Props { data: CVData; }
+interface Props { data: CVData; watermark?: boolean; }
 
 function getCfg(c: CVStyleConfig | undefined) {
+  const family = c?.font_family === "serif" ? { r: "Times-Roman", b: "Times-Bold" }
+    : c?.font_family === "mono" ? { r: "Courier", b: "Courier-Bold" }
+    : { r: "Helvetica", b: "Helvetica-Bold" };
   return {
-    accent:     String(c?.accent_color  ?? "#059669"),
-    font:       c?.font_family === "serif" ? "Georgia,'Times New Roman',serif"
-              : c?.font_family === "mono"  ? "'Courier New',Consolas,monospace"
-              : "system-ui,-apple-system,sans-serif",
-    px:         Number(c?.font_size   ?? 13),
-    lh:         Number(c?.line_height ?? 1.55),
-    photoR:     c?.photo_shape === "square" ? "3px" : c?.photo_shape === "rounded" ? "12px" : "50%",
-    secStyle:   (c?.section_style  ?? "underline") as string,
-    skillsSt:   (c?.skills_style   ?? "chips")     as string,
-    cardSt:     (c?.card_style     ?? "flat")       as string,
-    showPhoto:  c?.show_photo  !== false,
-    showIcons:  c?.show_icons  !== false,
-    upper:      c?.uppercase   === true,
+    accent:    String(c?.accent_color ?? "#059669"),
+    fontR:     family.r,
+    fontB:     family.b,
+    px:        Number(c?.font_size ?? 13) * 0.72,
+    lh:        Number(c?.line_height ?? 1.4),
+    photoR:    c?.photo_shape === "square" ? 4 : c?.photo_shape === "rounded" ? 14 : 31,
+    secStyle:  (c?.section_style ?? "underline") as string,
+    skillsSt:  (c?.skills_style  ?? "chips")     as string,
+    cardSt:    (c?.card_style    ?? "flat")      as string,
+    showPhoto: c?.show_photo !== false,
+    showIcons: c?.show_icons !== false,
+    upper:     c?.uppercase  === true,
   };
 }
-
 type Cfg = ReturnType<typeof getCfg>;
 
-/* Section header */
-function SecHead({ icon, label, cfg }: { icon:string; label:string; cfg:Cfg }) {
-  const { showIcons, secStyle, px, accent, font } = cfg;
-  const txt = showIcons ? `${icon} ${label}` : label;
+/* Section header — 4 variantes, igual que en el CV Builder */
+// Nota: nunca combinamos section.icon (emoji) con texto en negrita+mayúsculas.
+// Las fuentes estándar de react-pdf (Helvetica/Times/Courier) no tienen esos
+// glifos, y colocarlos junto a texto en uppercase corrompe visualmente lo que
+// sigue. Los otros 5 templates de Smartfolio ya evitan esto mismo; aquí
+// seguimos la misma convención por consistencia.
+function SecHead({ label, cfg }: { label: string; cfg: Cfg }) {
+  const { secStyle, px, accent, fontB } = cfg;
+  const base = { fontSize: px - 1, fontFamily: fontB, textTransform: "uppercase" as const, letterSpacing: 1.2 };
+
   if (secStyle === "left-bar") return (
-    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-      <div style={{ width:3, height:16, background:accent, borderRadius:2, flexShrink:0 }}/>
-      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{label}</h2>
-    </div>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+      <View style={{ width: 3, height: 12, backgroundColor: accent, borderRadius: 1.5 }} />
+      <Text style={{ ...base, color: accent }}>{label}</Text>
+    </View>
   );
   if (secStyle === "filled") return (
-    <div style={{ background:`${accent}15`, padding:"4px 10px", borderRadius:6, marginBottom:10 }}>
-      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
-    </div>
+    <View style={{ backgroundColor: `${accent}22`, paddingVertical: 3, paddingHorizontal: 7, borderRadius: 4, marginBottom: 8, alignSelf: "flex-start" }}>
+      <Text style={{ ...base, color: accent }}>{label}</Text>
+    </View>
   );
   if (secStyle === "minimal") return (
-    <div style={{ marginBottom:10 }}>
-      <h2 style={{ fontSize:px-3, fontWeight:700, textTransform:"uppercase", letterSpacing:"2px", color:"#9ca3af", margin:0, fontFamily:font }}>{label}</h2>
-    </div>
+    <View style={{ marginBottom: 8 }}>
+      <Text style={{ ...base, fontSize: px - 2, letterSpacing: 1.8, color: "#9ca3af" }}>{label}</Text>
+    </View>
   );
-  // default: underline
   return (
-    <div style={{ borderBottom:`1.5px solid ${accent}`, paddingBottom:4, marginBottom:10 }}>
-      <h2 style={{ fontSize:px-2, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.2px", color:accent, margin:0, fontFamily:font }}>{txt}</h2>
-    </div>
+    <View style={{ borderBottomWidth: 1.2, borderBottomColor: accent, paddingBottom: 3, marginBottom: 8 }}>
+      <Text style={{ ...base, color: accent }}>{label}</Text>
+    </View>
   );
 }
 
-/* Record card */
-function Card({ r, cfg }: { r:AcademicRecord; cfg:Cfg }) {
-  const { font, cardSt, accent, px, lh } = cfg;
-  const base: React.CSSProperties = { display:"flex", gap:10, marginBottom:6, borderRadius:8, padding:"7px 8px", fontFamily:font };
-  const variants: Record<string,React.CSSProperties> = {
-    flat:     { ...base },
-    shadow:   { ...base, boxShadow:"0 1px 5px rgba(0,0,0,.09)", background:"#fafafa" },
-    bordered: { ...base, border:"1px solid #e5e7eb", background:"white" },
-    accent:   { ...base, background:`${accent}0d`, borderLeft:`3px solid ${accent}`, paddingLeft:10 },
+/* Tarjeta de registro — 4 variantes */
+function Card({ r, cfg }: { r: AcademicRecord; cfg: Cfg }) {
+  const { fontR, fontB, cardSt, accent, px, lh } = cfg;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const variants: Record<string, any> = {
+    flat:     { flexDirection: "row", gap: 8, marginBottom: 5, borderRadius: 6, padding: 5 },
+    shadow:   { flexDirection: "row", gap: 8, marginBottom: 5, borderRadius: 6, padding: 5, backgroundColor: "#fafafa" },
+    bordered: { flexDirection: "row", gap: 8, marginBottom: 5, borderRadius: 6, padding: 5, borderWidth: 0.75, borderColor: "#e5e7eb" },
+    accent:   { flexDirection: "row", gap: 8, marginBottom: 5, borderRadius: 4, padding: 5, paddingLeft: 8, backgroundColor: `${accent}10`, borderLeftWidth: 2.5, borderLeftColor: accent },
   };
   return (
-    <div style={variants[cardSt] ?? base}>
-      <div style={{ width:42, flexShrink:0, textAlign:"right" }}>
-        <span style={{ fontSize:px-3, color:"#9ca3af" }}>
-          {r.end_date ? formatDate(r.end_date,"yyyy") : formatDate(r.start_date,"yyyy")}
-        </span>
-      </div>
-      <div style={{ flex:1 }}>
-        <p style={{ fontSize:px, fontWeight:600, color:"#111827", margin:0, lineHeight:lh, fontFamily:font }}>{r.title}</p>
-        <p style={{ fontSize:px-2, color:"#6b7280", margin:"2px 0 0", lineHeight:1.4 }}>
+    <View style={variants[cardSt] ?? variants.flat}>
+      <View style={{ width: 34, flexShrink: 0 }}>
+        <Text style={{ fontSize: px - 3, color: "#9ca3af", textAlign: "right" }}>
+          {r.end_date ? formatDate(r.end_date, "yyyy") : formatDate(r.start_date, "yyyy")}
+        </Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: px, fontFamily: fontB, color: "#111827", lineHeight: lh }}>{r.title}</Text>
+        <Text style={{ fontSize: px - 2, color: "#6b7280", marginTop: 1.5, fontFamily: fontR }}>
           {r.institution}{r.duration_hours ? ` · ${r.duration_hours}h` : ""}
-        </p>
-        {r.description && (
-          <p style={{ fontSize:px-3, color:"#9ca3af", margin:"3px 0 0", lineHeight:1.5 }}>{r.description}</p>
-        )}
-      </div>
-    </div>
+        </Text>
+        {r.description ? (
+          <Text style={{ fontSize: px - 3, color: "#9ca3af", marginTop: 2, lineHeight: 1.4, fontFamily: fontR }}>{r.description}</Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
-/* Skills in sidebar */
-function SidebarSkills({ allSkills, cfg }: { allSkills:Skill[]; cfg:Cfg }) {
-  const { skillsSt, px } = cfg;
+/* Habilidades en el sidebar — 4 variantes */
+function SidebarSkills({ allSkills, cfg }: { allSkills: Skill[]; cfg: Cfg }) {
+  const { skillsSt, px, fontR } = cfg;
   if (allSkills.length === 0) return null;
+
   if (skillsSt === "dots") return (
-    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-      {allSkills.slice(0,14).map(s => (
-        <div key={s.id} style={{ display:"flex", alignItems:"center", gap:6, fontSize:px-2, color:"rgba(255,255,255,.88)" }}>
-          <div style={{ width:4, height:4, borderRadius:"50%", background:"rgba(255,255,255,.55)", flexShrink:0 }}/>
-          {s.name}
-        </div>
+    <View style={{ flexDirection: "column", gap: 3 }}>
+      {allSkills.slice(0, 14).map(s => (
+        <View key={s.id} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: "rgba(255,255,255,0.55)" }} />
+          <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)", fontFamily: fontR }}>{s.name}</Text>
+        </View>
       ))}
-    </div>
+    </View>
   );
   if (skillsSt === "bars") return (
-    <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-      {allSkills.slice(0,8).map((s,i) => {
-        const pct = [90,75,85,70,80,65,88,72][i % 8];
+    <View style={{ flexDirection: "column", gap: 6 }}>
+      {allSkills.slice(0, 8).map((s, i) => {
+        const pct = [90, 75, 85, 70, 80, 65, 88, 72][i % 8];
         return (
-          <div key={s.id}>
-            <div style={{ fontSize:px-3, color:"rgba(255,255,255,.8)", marginBottom:2 }}>{s.name}</div>
-            <div style={{ height:3, background:"rgba(255,255,255,.2)", borderRadius:2, overflow:"hidden" }}>
-              <div style={{ height:"100%", width:`${pct}%`, background:"rgba(255,255,255,.7)", borderRadius:2 }}/>
-            </div>
-          </div>
+          <View key={s.id}>
+            <Text style={{ fontSize: px - 3, color: "rgba(255,255,255,0.8)", marginBottom: 2, fontFamily: fontR }}>{s.name}</Text>
+            <View style={{ height: 2.5, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 1.5 }}>
+              <View style={{ height: 2.5, width: `${pct}%`, backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 1.5 }} />
+            </View>
+          </View>
         );
       })}
-    </div>
+    </View>
   );
   if (skillsSt === "text") return (
-    <p style={{ fontSize:px-2, color:"rgba(255,255,255,.85)", lineHeight:1.8 }}>
+    <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, fontFamily: fontR }}>
       {allSkills.map(s => s.name).join("  ·  ")}
-    </p>
+    </Text>
   );
-  // chips (default)
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-      {allSkills.slice(0,12).map(s => (
-        <div key={s.id} style={{ fontSize:px-2, color:"#fff", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:4, padding:"3px 8px" }}>
-          {s.name}
-        </div>
+    <View style={{ flexDirection: "column", gap: 3 }}>
+      {allSkills.slice(0, 12).map(s => (
+        <View key={s.id} style={{ backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 0.75, borderColor: "rgba(255,255,255,0.25)", borderRadius: 3, paddingVertical: 2.5, paddingHorizontal: 6, alignSelf: "flex-start" }}>
+          <Text style={{ fontSize: px - 2, color: "white", fontFamily: fontR }}>{s.name}</Text>
+        </View>
       ))}
-    </div>
+    </View>
   );
 }
 
-export default function CVPreviewModern({ data }: Props) {
+export default function CVDocumentModern({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const cfg = getCfg(config);
-  const { accent, font, px, lh, photoR, showPhoto } = cfg;
+  const { accent, fontR, fontB, px, lh, photoR, showPhoto } = cfg;
   const allSkills = Object.values(skills).flat();
   const name = cfg.upper
     ? `${profile.first_name} ${profile.last_name}`.toUpperCase()
     : `${profile.first_name} ${profile.last_name}`;
 
   return (
-    <div style={{ fontFamily:font, color:"#1f2937", fontSize:px, minHeight:"297mm" }}>
-      <div style={{ display:"flex", minHeight:180 }}>
+    <Document title={`CV Moderno - ${profile.first_name} ${profile.last_name}`}
+      author="Smartfolio · BAN 00329 · UTS Bucaramanga">
+      <Page size="A4" style={{ flexDirection: "row", fontFamily: fontR, fontSize: px, color: "#1f2937" }}>
+
+        {watermark && (
+          <Text style={{
+            position: "absolute", top: "48%", left: 0, right: 0,
+            textAlign: "center", fontSize: 58, color: "#00000014",
+            fontFamily: "Helvetica-Bold", transform: "rotate(-35deg)",
+          }}>
+            SMARTFOLIO · PLAN GRATUITO
+          </Text>
+        )}
 
         {/* Sidebar */}
-        <div style={{ width:215, flexShrink:0, padding:"22px 18px", background:accent, color:"#fff" }}>
+        <View style={{ width: 160, backgroundColor: accent, padding: 18 }}>
           {showPhoto && (
-            profile.photo_url
-              ? <img src={profile.photo_url} alt="" style={{ width:76, height:76, objectFit:"cover", borderRadius:photoR, border:"2.5px solid rgba(255,255,255,.4)", marginBottom:14, display:"block" }}/>
-              : <div style={{ width:76, height:76, borderRadius:photoR, background:"rgba(255,255,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:14, fontSize:24, fontWeight:800, color:"white" }}>
+            profile.photo_url ? (
+              <Image src={profile.photo_url} style={{ width: 62, height: 62, borderRadius: photoR, marginBottom: 12 }} />
+            ) : (
+              <View style={{ width: 62, height: 62, borderRadius: photoR, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <Text style={{ fontSize: 20, fontFamily: fontB, color: "white" }}>
                   {profile.first_name?.[0]}{profile.last_name?.[0]}
-                </div>
+                </Text>
+              </View>
+            )
           )}
 
-          <p style={{ fontSize:px+1, fontWeight:800, color:"#fff", lineHeight:1.2, marginBottom:12, fontFamily:font }}>
+          <Text style={{ fontSize: px + 1, fontFamily: fontB, color: "white", marginBottom: 10, lineHeight: 1.2 }}>
             {name}
-          </p>
+          </Text>
 
-          <div style={{ fontSize:px-2, opacity:.9, display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-            {profile.city         && <div style={{ display:"flex", alignItems:"center", gap:5 }}><MapPin size={10}/> {profile.city}{profile.country ? `, ${profile.country}` : ""}</div>}
-            {profile.phone        && <div style={{ display:"flex", alignItems:"center", gap:5 }}><Phone size={10}/> {profile.phone}</div>}
-            {profile.linkedin_url && <div style={{ display:"flex", alignItems:"center", gap:5 }}><LinkIcon size={10}/> LinkedIn</div>}
-            {profile.github_url   && <div style={{ display:"flex", alignItems:"center", gap:5 }}><LinkIcon size={10}/> GitHub</div>}
-            {profile.website_url  && <div style={{ display:"flex", alignItems:"center", gap:5 }}><Globe size={10}/> Portafolio</div>}
-          </div>
+          <View style={{ marginBottom: 14, gap: 5 }}>
+            {profile.city         ? <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)" }}>📍 {profile.city}{profile.country ? `, ${profile.country}` : ""}</Text> : null}
+            {profile.phone        ? <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)" }}>📱 {profile.phone}</Text> : null}
+            {profile.linkedin_url ? <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)" }}>🔗 LinkedIn</Text> : null}
+            {profile.github_url   ? <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)" }}>💻 GitHub</Text> : null}
+            {profile.website_url  ? <Text style={{ fontSize: px - 2, color: "rgba(255,255,255,0.9)" }}>🌐 Portafolio</Text> : null}
+          </View>
 
           {allSkills.length > 0 && (
-            <div>
-              <div style={{ fontSize:px-4, fontWeight:700, textTransform:"uppercase", letterSpacing:"1px", color:"rgba(255,255,255,.55)", marginBottom:8 }}>
+            <View>
+              <Text style={{ fontSize: px - 4, fontFamily: fontB, textTransform: "uppercase", letterSpacing: 1, color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>
                 Habilidades
-              </div>
-              <SidebarSkills allSkills={allSkills} cfg={cfg}/>
-            </div>
+              </Text>
+              <SidebarSkills allSkills={allSkills} cfg={cfg} />
+            </View>
           )}
-        </div>
+        </View>
 
-        {/* Main */}
-        <div style={{ flex:1, padding:"22px 20px" }}>
+        {/* Contenido principal */}
+        <View style={{ flex: 1, padding: 18 }}>
           {!showPhoto && (
-            <h1 style={{ fontSize:px+8, fontWeight:800, color:accent, margin:"0 0 6px", lineHeight:1.15, fontFamily:font }}>{name}</h1>
+            <Text style={{ fontSize: px + 7, fontFamily: fontB, color: accent, marginBottom: 5 }}>{name}</Text>
           )}
-          {profile.bio && (
-            <p style={{ fontSize:px-1, color:"#4b5563", lineHeight:lh, maxWidth:420, margin:"0 0 12px", fontFamily:font }}>{profile.bio}</p>
-          )}
-          <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:px-2, color:"#9ca3af", marginBottom:18 }}>
-            <Mail size={10}/> contacto@smartfolio.co
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {profile.bio ? (
+            <Text style={{ fontSize: px - 1, color: "#4b5563", lineHeight: lh, marginBottom: 10, fontFamily: fontR }}>{profile.bio}</Text>
+          ) : null}
+
+          <View style={{ flexDirection: "column", gap: 12 }}>
             {sections.map(section => (
-              <div key={section.type}>
-                <SecHead icon={section.icon} label={section.label} cfg={cfg}/>
-                {section.records.map(r => <Card key={r.id} r={r} cfg={cfg}/>)}
-              </div>
+              <View key={section.type}>
+                <SecHead label={section.label} cfg={cfg} />
+                {section.records.map(r => <Card key={r.id} r={r} cfg={cfg} />)}
+              </View>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </View>
+        </View>
+      </Page>
+    </Document>
   );
 }
