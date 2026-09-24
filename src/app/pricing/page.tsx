@@ -5,6 +5,8 @@ import {
   User, Briefcase, Star, Building2,
 } from "lucide-react";
 import type { UserPlan } from "@/types";
+import { isPurchasablePlan } from "@/lib/wompi";
+import WompiCheckoutButton from "@/components/payments/WompiCheckoutButton";
 
 export const metadata = { title: "Precios" };
 
@@ -192,6 +194,12 @@ export default async function PricingPage() {
                   >
                     {plan.ctaLabel}
                   </a>
+                ) : user && isPurchasablePlan(plan.key) ? (
+                  <WompiCheckoutButton
+                    plan={plan.key}
+                    label={`Elegir ${plan.name}`}
+                    background={plan.highlighted ? "#7c3aed" : "#16a34a"}
+                  />
                 ) : (
                   <Link
                     href={user ? "/settings" : `/register?plan=${plan.key}`}
