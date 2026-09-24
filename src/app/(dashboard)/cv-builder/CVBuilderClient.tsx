@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/client";
 import { generateCVData } from "@/lib/cv-generator";
 import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, CVStyleConfig, RecordType, UserPlan } from "@/types";
 import { RECORD_TYPE_LABELS, PLAN_LABELS } from "@/types";
-import { planAtLeast } from "@/lib/plan";
+import { planAtLeast, hasFeature } from "@/lib/plan";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Loader2, CheckCircle2, Eye, Share2, FileText,
   Layout, Palette, Sparkles, SlidersHorizontal,
@@ -304,6 +305,25 @@ function Divider() {
   return <div className="border-t border-gray-100 my-4"/>;
 }
 
+function LockedCustomizationPanel({ label }: { label: string }) {
+  return (
+    <div className="text-center py-10 px-4">
+      <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-3">
+        <Lock size={20} className="text-purple-600"/>
+      </div>
+      <p className="text-sm font-bold text-gray-800 mb-1.5">{label} es una función Premium</p>
+      <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+        Actualiza tu plan para personalizar fuentes, colores y el diseño completo de tu CV.
+      </p>
+      <Link href="/pricing"
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white"
+        style={{ background: "#7c3aed" }}>
+        <Sparkles size={12}/> Ver planes
+      </Link>
+    </div>
+  );
+}
+
 interface Props {
   profile:Profile|null; records:AcademicRecord[]; skills:Skill[];
   templates:CVTemplate[]; config:CVConfiguration|null; preSelectedTemplate?:string;
@@ -317,6 +337,8 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
   const supabase = createClient();
   const router   = useRouter();
   const userPlan: UserPlan = profile?.plan ?? "free";
+  const unlockedCustomization = hasFeature("fullCustomization", userPlan);
+  const CUSTOMIZATION_TABS: Tab[] = ["fuentes", "estilo", "diseno"];
 
   const handleLockedTemplateClick = (minPlan: UserPlan) => {
     toast.error(`Esta plantilla requiere el plan ${PLAN_LABELS[minPlan]}`, {
@@ -455,13 +477,17 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   {id:"estilo",   label:"Estilo",    icon:<Palette size={10}/>},
                   {id:"diseno",   label:"Diseño",    icon:<Sparkles size={10}/>},
                   {id:"secciones",label:"Secciones", icon:<SlidersHorizontal size={10}/>},
-                ] as {id:Tab;label:string;icon:React.ReactNode}[]).map(({id,label,icon})=>(
+                ] as {id:Tab;label:string;icon:React.ReactNode}[]).map(({id,label,icon})=>{
+                  const tabLocked = CUSTOMIZATION_TABS.includes(id) && !unlockedCustomization;
+                  return (
                   <button key={id} onClick={()=>setTab(id)}
                     className={cn("flex-1 flex items-center justify-center gap-0.5 py-2 px-0.5 rounded-2xl text-[10px] font-semibold transition-all",
                       tab===id?"bg-white text-gray-900 shadow-sm":"text-gray-400 hover:text-gray-600")}>
                     {icon}<span className="hidden sm:inline ml-0.5">{label}</span>
+                    {tabLocked && <Lock size={9} className="text-purple-400 flex-shrink-0"/>}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="p-4 space-y-4 max-h-[72vh] overflow-y-auto">
@@ -505,7 +531,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                   </>
                 )}
 
-                {tab==="fuentes" && (
+                {tab==="fuentes" && (unlockedCustomization ? (
                   <>
                     <STitle icon={<Type size={10}/>} text="Familia tipográfica"/>
                     <div className="flex gap-1.5 mb-3">
@@ -549,9 +575,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                       <Toggle checked={uppercase} onChange={setUpper}/>
                     </div>
                   </>
-                )}
+                ) : <LockedCustomizationPanel label="Fuentes"/>)}
 
-                {tab==="estilo" && (
+                {tab==="estilo" && (unlockedCustomization ? (
                   <>
                     <STitle icon={<Palette size={10}/>} text="Color de acento"/>
                     <div className="grid grid-cols-6 gap-2">
@@ -589,9 +615,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                       ))}
                     </div>
                   </>
-                )}
+                ) : <LockedCustomizationPanel label="Estilo"/>)}
 
-                {tab==="diseno" && (
+                {tab==="diseno" && (unlockedCustomization ? (
                   <>
                     <div className="flex items-center justify-between mb-1">
                       <STitle icon={<User size={10}/>} text="Foto de perfil"/>
@@ -674,7 +700,7 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                       <Toggle checked={showIcons} onChange={setShowIcons}/>
                     </div>
                   </>
-                )}
+                ) : <LockedCustomizationPanel label="Diseño"/>)}
 
                 {tab==="secciones" && (
                   <>
