@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS } from "@/types";
 import { formatDate } from "@/lib/utils";
 import type { Metadata } from "next";
-import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye, Mail } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye, Mail, BadgeCheck } from "lucide-react";
 import { headers } from "next/headers";
+import { hasFeature } from "@/lib/plan";
+import type { UserPlan } from "@/types";
 
 interface Props { params: Promise<{ username: string }> }
 
@@ -42,6 +44,11 @@ export default async function PublicPortfolioPage({ params }: Props) {
   const byType = (records ?? []).reduce<Record<string, typeof records>>((acc, r) => {
     acc[r.record_type] = [...(acc[r.record_type] ?? []), r]; return acc;
   }, {});
+
+  // Insignia de certificado verificado — exclusiva de Premium/Business.
+  // En Free/Basic el link de "Verificar" se sigue mostrando igual que
+  // siempre (no se le quita nada a nadie), solo que sin el badge especial.
+  const showVerifiedBadge = hasFeature("certificateBadge", (profile.plan as UserPlan) ?? "free");
 
   const skillsByCategory = (skills ?? []).reduce<Record<string, typeof skills>>((acc, s) => {
     acc[s.category] = [...(acc[s.category] ?? []), s]; return acc;
@@ -156,9 +163,20 @@ export default async function PublicPortfolioPage({ params }: Props) {
                               {r.end_date ? ` — ${formatDate(r.end_date, "MMM yyyy")}` : ""}
                             </p>
                             {r.credential_url && (
-                              <a href={r.credential_url} target="_blank" style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "11px", color: "#16a34a", textDecoration: "none" }}>
-                                Verificar <ExternalLink size={10} />
-                              </a>
+                              showVerifiedBadge ? (
+                                <a href={r.credential_url} target="_blank" rel="noopener noreferrer" style={{
+                                  display: "inline-flex", alignItems: "center", gap: "4px",
+                                  background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a",
+                                  padding: "3px 10px", borderRadius: "99px", fontSize: "11px", fontWeight: "700",
+                                  textDecoration: "none",
+                                }}>
+                                  <BadgeCheck size={12} /> Verificado
+                                </a>
+                              ) : (
+                                <a href={r.credential_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontSize: "11px", color: "#16a34a", textDecoration: "none" }}>
+                                  Verificar <ExternalLink size={10} />
+                                </a>
+                              )
                             )}
                           </div>
                         </div>
