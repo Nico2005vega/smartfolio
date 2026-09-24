@@ -2,14 +2,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { generateCVData } from "@/lib/cv-generator";
-import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, CVStyleConfig, RecordType } from "@/types";
-import { RECORD_TYPE_LABELS } from "@/types";
+import type { Profile, AcademicRecord, Skill, CVTemplate, CVConfiguration, CVStyleConfig, RecordType, UserPlan } from "@/types";
+import { RECORD_TYPE_LABELS, PLAN_LABELS } from "@/types";
+import { planAtLeast } from "@/lib/plan";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import {
   Loader2, CheckCircle2, Eye, Share2, FileText,
   Layout, Palette, Sparkles, SlidersHorizontal,
   User, BookOpen, Minus, Tag, BarChart2,
-  Search, X, Heart, ArrowRight, Shield, Type,
+  Search, X, Heart, ArrowRight, Shield, Type, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -91,20 +93,21 @@ const PALETTES = [
   "#b7882c","#0f766e","#9333ea","#c2410c","#1d4ed8","#be185d",
 ];
 
-interface TplMeta { key:string; name:string; category:string; description:string; tags:string[]; ats:number; accent:string; }
+interface TplMeta { key:string; name:string; category:string; description:string; tags:string[]; ats:number; accent:string; minPlan:UserPlan; }
+// Reparto acorde a lo que promete /pricing: Free=1, Basic=6 (las originales), Premium/Business=12 (todas)
 const CATALOGUE: TplMeta[] = [
-  { key:"modern",    name:"Moderna",     category:"profesional",  description:"Sidebar colorido con foto",                tags:["Popular","ATS"], ats:82,  accent:"#2563EB" },
-  { key:"classic",   name:"Clásica",     category:"tradicional",  description:"Encabezado centrado, académica",            tags:["Formal","ATS"],  ats:95,  accent:"#374151" },
-  { key:"executive", name:"Ejecutiva",   category:"ejecutivo",    description:"Tipografía protagonista",                   tags:["Elegante"],      ats:90,  accent:"#111827" },
-  { key:"creative",  name:"Creativa",    category:"creativo",     description:"Header bold + sidebar skills",              tags:["Nuevo","Visual"], ats:68,  accent:"#EC4899" },
-  { key:"minimal",   name:"Minimalista", category:"minimalista",  description:"Serif elegante, ultra limpia",              tags:["Limpia"],        ats:88,  accent:"#6B7280" },
-  { key:"tech",      name:"Tecnológica", category:"tecnológico",  description:"Sidebar oscuro estilo código",              tags:["Dev"],           ats:75,  accent:"#06B6D4" },
-  { key:"corporate", name:"Corporativa", category:"corporativo",  description:"Header navy profesional dos columnas",      tags:["Corporativo"],   ats:92,  accent:"#1e3a5f" },
-  { key:"elegant",   name:"Elegante",    category:"ejecutivo",    description:"Acento dorado serif centrada",              tags:["Premium","Serif"],ats:80,  accent:"#b7882c" },
-  { key:"ats",       name:"ATS Pro",     category:"ats",          description:"Sin imágenes 100% compatible ATS",          tags:["ATS","Máximo"],  ats:100, accent:"#16a34a" },
-  { key:"bold",      name:"Audaz",       category:"creativo",     description:"Diagonal geométrica muy impactante",        tags:["Nuevo","Bold"],  ats:62,  accent:"#e11d48" },
-  { key:"compact",   name:"Compacta",    category:"profesional",  description:"Eficiente, más contenido menos espacio",    tags:["Eficiente"],     ats:85,  accent:"#0891b2" },
-  { key:"academic",  name:"Académica",   category:"académico",    description:"Estilo Harvard/Oxford para investigadores", tags:["Académico"],     ats:94,  accent:"#4f46e5" },
+  { key:"classic",   name:"Clásica",     category:"tradicional",  description:"Encabezado centrado, académica",            tags:["Formal","ATS"],  ats:95,  accent:"#374151", minPlan:"free" },
+  { key:"modern",    name:"Moderna",     category:"profesional",  description:"Sidebar colorido con foto",                tags:["Popular","ATS"], ats:82,  accent:"#2563EB", minPlan:"basic" },
+  { key:"executive", name:"Ejecutiva",   category:"ejecutivo",    description:"Tipografía protagonista",                   tags:["Elegante"],      ats:90,  accent:"#111827", minPlan:"basic" },
+  { key:"creative",  name:"Creativa",    category:"creativo",     description:"Header bold + sidebar skills",              tags:["Nuevo","Visual"], ats:68,  accent:"#EC4899", minPlan:"basic" },
+  { key:"minimal",   name:"Minimalista", category:"minimalista",  description:"Serif elegante, ultra limpia",              tags:["Limpia"],        ats:88,  accent:"#6B7280", minPlan:"basic" },
+  { key:"tech",      name:"Tecnológica", category:"tecnológico",  description:"Sidebar oscuro estilo código",              tags:["Dev"],           ats:75,  accent:"#06B6D4", minPlan:"basic" },
+  { key:"corporate", name:"Corporativa", category:"corporativo",  description:"Header navy profesional dos columnas",      tags:["Corporativo"],   ats:92,  accent:"#1e3a5f", minPlan:"premium" },
+  { key:"elegant",   name:"Elegante",    category:"ejecutivo",    description:"Acento dorado serif centrada",              tags:["Premium","Serif"],ats:80,  accent:"#b7882c", minPlan:"premium" },
+  { key:"ats",       name:"ATS Pro",     category:"ats",          description:"Sin imágenes 100% compatible ATS",          tags:["ATS","Máximo"],  ats:100, accent:"#16a34a", minPlan:"premium" },
+  { key:"bold",      name:"Audaz",       category:"creativo",     description:"Diagonal geométrica muy impactante",        tags:["Nuevo","Bold"],  ats:62,  accent:"#e11d48", minPlan:"premium" },
+  { key:"compact",   name:"Compacta",    category:"profesional",  description:"Eficiente, más contenido menos espacio",    tags:["Eficiente"],     ats:85,  accent:"#0891b2", minPlan:"premium" },
+  { key:"academic",  name:"Académica",   category:"académico",    description:"Estilo Harvard/Oxford para investigadores", tags:["Académico"],     ats:94,  accent:"#4f46e5", minPlan:"premium" },
 ];
 
 const CATS = [
@@ -151,8 +154,9 @@ function Thumb({ k, c }: { k:string; c:string }) {
   }
 }
 
-function GalleryModal({ currentKey, onSelect, onClose }: {
+function GalleryModal({ currentKey, onSelect, onClose, userPlan, onLockedClick }: {
   currentKey:string; onSelect:(key:string)=>void; onClose:()=>void;
+  userPlan:UserPlan; onLockedClick:(minPlan:UserPlan)=>void;
 }) {
   const [search,  setSearch]  = useState("");
   const [cat,     setCat]     = useState("all");
@@ -203,16 +207,23 @@ function GalleryModal({ currentKey, onSelect, onClose }: {
             {filtered.map(tpl=>{
               const isActive = currentKey===tpl.key;
               const isHov    = hovered===tpl.key;
+              const locked   = !planAtLeast(userPlan, tpl.minPlan);
               return (
                 <div key={tpl.key}
                   className={cn("relative rounded-2xl border-2 overflow-hidden cursor-pointer select-none",
                     isActive?"border-indigo-500 ring-2 ring-indigo-200 shadow-lg":"border-gray-100 hover:border-gray-300 hover:shadow-md")}
                   style={{ transform:isHov&&!isActive?"translateY(-4px)":"none", transition:"all .2s cubic-bezier(.34,1.56,.64,1)" }}
                   onMouseEnter={()=>setHovered(tpl.key)} onMouseLeave={()=>setHovered(null)}
-                  onClick={()=>{ onSelect(tpl.key); onClose(); }}>
+                  onClick={()=>{ if (locked) { onLockedClick(tpl.minPlan); return; } onSelect(tpl.key); onClose(); }}>
                   <div className="relative bg-gray-50" style={{ aspectRatio:"4/5" }}>
                     <Thumb k={tpl.key} c={tpl.accent}/>
-                    {isHov && (
+                    {locked && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5" style={{ background:"rgba(255,255,255,.75)", backdropFilter:"blur(1.5px)" }}>
+                        <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center"><Lock size={13} className="text-purple-600"/></div>
+                        <span className="text-[9px] font-bold text-purple-700 px-2 py-0.5 bg-purple-50 rounded-full border border-purple-200">{PLAN_LABELS[tpl.minPlan]}</span>
+                      </div>
+                    )}
+                    {!locked && isHov && (
                       <div className="absolute inset-0 flex items-center justify-center" style={{ background:"rgba(0,0,0,.45)", backdropFilter:"blur(1px)" }}>
                         <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white rounded-full shadow-lg"
                           style={{ background:tpl.accent }} onClick={e=>{e.stopPropagation();onSelect(tpl.key);onClose();}}>
@@ -299,11 +310,19 @@ interface Props {
 }
 
 export default function CVBuilderClient({ profile, records, skills, templates, config, preSelectedTemplate }:Props) {
-  const [tplKey,      setTplKey]      = useState(preSelectedTemplate??config?.template?.template_key??"modern");
+  const [tplKey,      setTplKey]      = useState(preSelectedTemplate??config?.template?.template_key??"classic");
   const [tab,         setTab]         = useState<Tab>("plantilla");
   const [saving,      setSaving]      = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const supabase = createClient();
+  const router   = useRouter();
+  const userPlan: UserPlan = profile?.plan ?? "free";
+
+  const handleLockedTemplateClick = (minPlan: UserPlan) => {
+    toast.error(`Esta plantilla requiere el plan ${PLAN_LABELS[minPlan]}`, {
+      action: { label: "Ver planes", onClick: () => router.push("/pricing") },
+    });
+  };
 
   useEffect(()=>{
     const id="smartfolio-gfonts";
@@ -404,7 +423,9 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
       {galleryOpen && (
         <GalleryModal currentKey={tplKey}
           onSelect={key=>{setTplKey(key);toast.success(`Plantilla "${CATALOGUE.find(t=>t.key===key)?.name}" aplicada ✓`);}}
-          onClose={()=>setGalleryOpen(false)}/>
+          onClose={()=>setGalleryOpen(false)}
+          userPlan={userPlan}
+          onLockedClick={handleLockedTemplateClick}/>
       )}
 
       <div className="max-w-7xl mx-auto">
@@ -455,18 +476,31 @@ export default function CVBuilderClient({ profile, records, skills, templates, c
                     </button>
                     <p className="text-[11px] text-gray-400 font-medium">O elige rápidamente:</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {allTpls.map(t=>(
-                        <button key={t.id} onClick={()=>setTplKey(t.template_key)}
+                      {allTpls.map(t=>{
+                        const meta   = CATALOGUE.find(c=>c.key===t.template_key);
+                        const locked = meta ? !planAtLeast(userPlan, meta.minPlan) : false;
+                        return (
+                        <button key={t.id}
+                          onClick={()=>{ if (locked && meta) { handleLockedTemplateClick(meta.minPlan); return; } setTplKey(t.template_key); }}
                           className={cn("relative text-left rounded-2xl border-2 overflow-hidden transition-all hover:shadow-md",
                             tplKey===t.template_key?"border-green-500 shadow-md ring-2 ring-green-100":"border-gray-100 hover:border-gray-200")}>
                           {tplKey===t.template_key && <div className="absolute top-2 right-2 z-10 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"><CheckCircle2 size={11} className="text-white"/></div>}
-                          <div className="h-20 bg-gray-50 p-2"><Thumb k={t.template_key} c={accent}/></div>
+                          <div className="relative h-20 bg-gray-50 p-2">
+                            <Thumb k={t.template_key} c={accent}/>
+                            {locked && meta && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1" style={{ background:"rgba(255,255,255,.8)" }}>
+                                <Lock size={13} className="text-purple-600"/>
+                                <span className="text-[8px] font-bold text-purple-700 px-1.5 py-0.5 bg-purple-50 rounded-full border border-purple-200">{PLAN_LABELS[meta.minPlan]}</span>
+                              </div>
+                            )}
+                          </div>
                           <div className="p-2.5 border-t border-gray-50">
                             <p className="text-xs font-bold text-gray-800">{t.name}</p>
                             {t.description&&<p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{t.description}</p>}
                           </div>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}

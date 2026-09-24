@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import AcademicRecordForm from "@/components/forms/AcademicRecordForm";
 import Link from "next/link";
 import { ChevronLeft, Sparkles } from "lucide-react";
-import { canAddMore, getLimit } from "@/lib/plans";
+import { canAddMore, getLimit } from "@/lib/plan";
 import type { UserPlan } from "@/types";
 
 export const metadata = { title: "Nuevo Registro Académico" };

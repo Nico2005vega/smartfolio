@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Upload, FileText, ImageIcon, X, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { canAddMore, getLimit } from "@/lib/plans";
+import { canAddMore, getLimit } from "@/lib/plan";
 import type { UserPlan } from "@/types";
 
 const ACCEPTED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];

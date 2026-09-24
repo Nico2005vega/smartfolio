@@ -4,7 +4,7 @@ import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CVData, UserPlan } from "@/types";
 import type { DocumentProps } from "@react-pdf/renderer";
-import { hasFeature } from "@/lib/plans";
+import { hasFeature } from "@/lib/plan";
 
 interface Props {
   data:        CVData;

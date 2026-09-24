@@ -9,7 +9,7 @@ import { Plus, Trash2, Loader2, Code2, Brain, Globe, Wrench, Sparkles } from "lu
 import Link from "next/link";
 import type { Skill, SkillCategory, SkillLevel, UserPlan } from "@/types";
 import { SKILL_CATEGORY_LABELS, SKILL_LEVEL_LABELS } from "@/types";
-import { canAddMore, getLimit } from "@/lib/plans";
+import { canAddMore, getLimit } from "@/lib/plan";
 
 interface Props { profileId: string; initialSkills: Skill[]; plan: UserPlan; }
 
