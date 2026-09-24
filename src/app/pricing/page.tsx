@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import {
   FileText, ArrowRight, Check, X,
-  User, Briefcase, Star, Building2,
+  User, Briefcase, Star, Building2, ShieldCheck,
 } from "lucide-react";
 import type { UserPlan } from "@/types";
 import { isPurchasablePlan } from "@/lib/wompi";
@@ -18,7 +18,7 @@ interface PlanDef {
   price: string;
   period: string;
   color: string;
-  bg: string;
+  gradient: string;
   badge?: string;
   badgeColor?: string;
   highlighted?: boolean;
@@ -29,7 +29,7 @@ interface PlanDef {
 const PLANS: PlanDef[] = [
   {
     key: "free", name: "Free", icon: User, price: "$0", period: "/mes",
-    color: "#6b7280", bg: "#f3f4f6",
+    color: "#6b7280", gradient: "linear-gradient(135deg,#9ca3af,#6b7280)",
     features: [
       { text: "3 registros académicos", included: true },
       { text: "1 plantilla de CV", included: true },
@@ -41,7 +41,7 @@ const PLANS: PlanDef[] = [
   },
   {
     key: "basic", name: "Basic", icon: Briefcase, price: "$19.900", period: "/mes",
-    color: "#2563eb", bg: "#eff6ff",
+    color: "#2563eb", gradient: "linear-gradient(135deg,#60a5fa,#2563eb)",
     features: [
       { text: "Registros ilimitados", included: true },
       { text: "6 plantillas de CV", included: true },
@@ -53,7 +53,7 @@ const PLANS: PlanDef[] = [
   },
   {
     key: "premium", name: "Premium", icon: Star, price: "$44.900", period: "/mes",
-    color: "#7c3aed", bg: "#f5f3ff",
+    color: "#7c3aed", gradient: "linear-gradient(135deg,#a78bfa,#7c3aed)",
     badge: "Más popular", badgeColor: "#7c3aed", highlighted: true,
     features: [
       { text: "Registros ilimitados", included: true },
@@ -66,7 +66,7 @@ const PLANS: PlanDef[] = [
   },
   {
     key: "business", name: "Business", icon: Building2, price: "A cotizar", period: "",
-    color: "#d97706", bg: "#fffbeb",
+    color: "#d97706", gradient: "linear-gradient(135deg,#fbbf24,#d97706)",
     badge: "Institucional", badgeColor: "#d97706",
     features: [
       { text: "Todo lo de Premium", included: true },
@@ -76,6 +76,25 @@ const PLANS: PlanDef[] = [
       { text: "Soporte dedicado", included: true },
     ],
     ctaLabel: "Contactar ventas",
+  },
+];
+
+const FAQS = [
+  {
+    q: "¿Puedo cambiar de plan cuando quiera?",
+    a: "Sí. Puedes subir o bajar de plan en cualquier momento desde esta misma página, sin esperar a que termine ningún ciclo.",
+  },
+  {
+    q: "¿Cómo se procesan los pagos?",
+    a: "A través de Wompi, la pasarela de pagos más usada en Colombia. Smartfolio nunca ve ni guarda los datos de tu tarjeta.",
+  },
+  {
+    q: "¿Qué pasa si cancelo?",
+    a: "Vuelves automáticamente al plan Free. Tus registros, documentos y CV no se borran — solo se aplican de nuevo los límites gratuitos.",
+  },
+  {
+    q: "¿El plan Business tiene un precio fijo?",
+    a: "No — como está pensado para universidades o empresas con muchos usuarios, el precio se cotiza según la cantidad de personas. Escríbenos y te respondemos rápido.",
   },
 ];
 
@@ -94,9 +113,17 @@ export default async function PricingPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui,-apple-system,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg,#fafafa 0%,#f8fafc 400px)", fontFamily: "system-ui,-apple-system,sans-serif" }}>
 
-      {/* ── Navbar (igual que la landing) ── */}
+      <style>{`
+        .pricing-card { transition: transform .25s ease, box-shadow .25s ease; }
+        .pricing-card:hover { transform: translateY(-6px); }
+        .pricing-card.featured:hover { transform: translateY(-10px) scale(1.02); }
+        .pricing-cta { transition: opacity .15s ease, transform .15s ease; }
+        .pricing-cta:hover { opacity: .92; transform: translateY(-1px); }
+      `}</style>
+
+      {/* ── Navbar ── */}
       <nav style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "0 32px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
           <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "linear-gradient(135deg,#16a34a,#059669)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -124,73 +151,96 @@ export default async function PricingPage() {
       </nav>
 
       {/* ── Encabezado ── */}
-      <div style={{ textAlign: "center", padding: "56px 32px 16px", maxWidth: "640px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "34px", fontWeight: "800", color: "#111827", margin: "0 0 12px", letterSpacing: "-0.5px" }}>
+      <div style={{ textAlign: "center", padding: "64px 32px 16px", maxWidth: "680px", margin: "0 auto" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "6px", padding: "6px 14px",
+          background: "white", border: "1px solid #e9d5ff", borderRadius: "99px",
+          fontSize: "12px", fontWeight: "700", color: "#7c3aed", marginBottom: "18px",
+          boxShadow: "0 1px 3px rgba(124,58,237,0.08)",
+        }}>
+          <ShieldCheck size={13} /> Pagos seguros con Wompi
+        </div>
+        <h1 style={{ fontSize: "38px", fontWeight: "800", color: "#111827", margin: "0 0 14px", letterSpacing: "-0.8px", lineHeight: 1.1 }}>
           Un plan para cada etapa
         </h1>
         <p style={{ color: "#6b7280", fontSize: "16px", margin: 0, lineHeight: 1.6 }}>
-          Desde tu primer CV hasta encontrar tu próximo empleo. Cambia de plan cuando quieras.
+          Desde tu primer CV hasta encontrar tu próximo empleo. Cambia de plan cuando quieras, sin permanencias.
         </p>
       </div>
 
       {/* ── Tarjetas de planes ── */}
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "40px 32px 80px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: "20px", alignItems: "stretch" }}>
+      <div style={{ maxWidth: "1140px", margin: "0 auto", padding: "44px 32px 90px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "22px", alignItems: "stretch" }}>
           {PLANS.map((plan) => {
             const Icon = plan.icon;
             const isCurrent = currentPlan === plan.key;
 
             return (
-              <div key={plan.key} style={{
-                background: "white",
-                borderRadius: "20px",
-                border: plan.highlighted ? "2px solid #7c3aed" : "1px solid #f0f0f0",
-                padding: "28px 24px",
-                boxShadow: plan.highlighted ? "0 8px 30px rgba(124,58,237,0.12)" : "0 1px 4px rgba(0,0,0,0.04)",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-              }}>
+              <div
+                key={plan.key}
+                className={`pricing-card${plan.highlighted ? " featured" : ""}`}
+                style={{
+                  background: "white",
+                  borderRadius: "22px",
+                  border: plan.highlighted ? "2px solid #7c3aed" : "1px solid #efefef",
+                  padding: "30px 26px",
+                  boxShadow: plan.highlighted ? "0 12px 40px rgba(124,58,237,0.16)" : "0 2px 10px rgba(0,0,0,0.03)",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  transform: plan.highlighted ? "translateY(-4px)" : "none",
+                }}
+              >
                 {plan.badge && (
                   <div style={{
-                    position: "absolute", top: "-12px", left: "24px",
+                    position: "absolute", top: "-13px", left: "26px",
                     background: plan.badgeColor, color: "white",
                     fontSize: "11px", fontWeight: "700",
-                    padding: "4px 12px", borderRadius: "99px",
+                    padding: "5px 13px", borderRadius: "99px",
+                    boxShadow: `0 4px 12px ${plan.badgeColor}55`,
                   }}>
                     {plan.badge}
                   </div>
                 )}
 
-                <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: plan.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                  <Icon size={22} color={plan.color} />
+                <div style={{
+                  width: "48px", height: "48px", borderRadius: "14px", background: plan.gradient,
+                  display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "18px",
+                  boxShadow: `0 6px 16px ${plan.color}40`,
+                }}>
+                  <Icon size={23} color="white" />
                 </div>
 
                 <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#111827", margin: "0 0 4px" }}>{plan.name}</h3>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "4px", margin: "0 0 20px" }}>
-                  <span style={{ fontSize: "28px", fontWeight: "800", color: "#111827" }}>{plan.price}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "4px", margin: "0 0 22px" }}>
+                  <span style={{ fontSize: "30px", fontWeight: "800", color: "#111827", letterSpacing: "-0.5px" }}>{plan.price}</span>
                   {plan.period && <span style={{ fontSize: "13px", color: "#9ca3af" }}>{plan.period}</span>}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px", flex: 1 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "11px", marginBottom: "26px", flex: 1 }}>
                   {plan.features.map((f) => (
-                    <div key={f.text} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "13px", color: f.included ? "#374151" : "#c1c7d0" }}>
+                    <div key={f.text} style={{ display: "flex", gap: "9px", alignItems: "flex-start", fontSize: "13px", color: f.included ? "#374151" : "#c1c7d0" }}>
                       {f.included
-                        ? <Check size={15} color="#16a34a" style={{ flexShrink: 0, marginTop: "1px" }} />
-                        : <X size={15} color="#d1d5db" style={{ flexShrink: 0, marginTop: "1px" }} />}
-                      <span>{f.text}</span>
+                        ? (
+                          <div style={{ width: "16px", height: "16px", borderRadius: "5px", background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "1px" }}>
+                            <Check size={11} color="#16a34a" strokeWidth={3} />
+                          </div>
+                        )
+                        : <X size={15} color="#e5e7eb" style={{ flexShrink: 0, marginTop: "1px" }} />}
+                      <span style={{ lineHeight: 1.4 }}>{f.text}</span>
                     </div>
                   ))}
                 </div>
 
                 {isCurrent ? (
-                  <div style={{ textAlign: "center", padding: "12px", background: "#f3f4f6", color: "#6b7280", borderRadius: "10px", fontSize: "14px", fontWeight: "600" }}>
+                  <div style={{ textAlign: "center", padding: "12px", background: "#f3f4f6", color: "#6b7280", borderRadius: "12px", fontSize: "14px", fontWeight: "600" }}>
                     Tu plan actual
                   </div>
                 ) : plan.key === "business" ? (
                   <a
                     href="mailto:ventas@smartfolio.co"
-                    style={{ textAlign: "center", padding: "12px", background: "#111827", color: "white", borderRadius: "10px", fontSize: "14px", fontWeight: "700", textDecoration: "none" }}
+                    className="pricing-cta"
+                    style={{ textAlign: "center", padding: "13px", background: "#111827", color: "white", borderRadius: "12px", fontSize: "14px", fontWeight: "700", textDecoration: "none" }}
                   >
                     {plan.ctaLabel}
                   </a>
@@ -203,10 +253,11 @@ export default async function PricingPage() {
                 ) : (
                   <Link
                     href={user ? "/settings" : `/register?plan=${plan.key}`}
+                    className="pricing-cta"
                     style={{
-                      textAlign: "center", padding: "12px",
+                      textAlign: "center", padding: "13px",
                       background: plan.highlighted ? "#7c3aed" : "#16a34a",
-                      color: "white", borderRadius: "10px", textDecoration: "none",
+                      color: "white", borderRadius: "12px", textDecoration: "none",
                       fontSize: "14px", fontWeight: "700",
                     }}
                   >
@@ -218,12 +269,27 @@ export default async function PricingPage() {
           })}
         </div>
 
-        <p style={{ textAlign: "center", color: "#9ca3af", fontSize: "13px", marginTop: "32px" }}>
+        <p style={{ textAlign: "center", color: "#9ca3af", fontSize: "13px", marginTop: "36px" }}>
           Todos los precios están en pesos colombianos (COP). Puedes cambiar o cancelar tu plan cuando quieras.
         </p>
+
+        {/* ── Preguntas frecuentes ── */}
+        <div style={{ maxWidth: "680px", margin: "72px auto 0" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#111827", textAlign: "center", margin: "0 0 28px" }}>
+            Preguntas frecuentes
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {FAQS.map((item) => (
+              <div key={item.q} style={{ background: "white", borderRadius: "16px", border: "1px solid #f0f0f0", padding: "18px 20px" }}>
+                <p style={{ fontSize: "14px", fontWeight: "700", color: "#111827", margin: "0 0 6px" }}>{item.q}</p>
+                <p style={{ fontSize: "13px", color: "#6b7280", margin: 0, lineHeight: 1.6 }}>{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* ── Footer (igual que la landing) ── */}
+      {/* ── Footer ── */}
       <div style={{ borderTop: "1px solid #e5e7eb", padding: "20px 32px", textAlign: "center" }}>
         <p style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}>
           © 2025 Smartfolio · Nicolás Vega & Juan Carlos Rúgeles · UTS Bucaramanga
