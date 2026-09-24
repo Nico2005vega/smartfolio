@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   GraduationCap, LayoutDashboard, User, BookOpen,
-  FileText, Palette, Settings, Shield, Tag, LogOut
+  FileText, Palette, Settings, Shield, Tag, LogOut, Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/academic",   label: "Formación",   icon: BookOpen },
   { href: "/documents",  label: "Documentos",  icon: FileText },
   { href: "/cv-builder", label: "Generar CV",  icon: Palette },
+  { href: "/pricing",    label: "Planes",      icon: Sparkles },
 ];
 
 const adminItems = [
@@ -79,18 +80,20 @@ export default function Sidebar({ role }: SidebarProps) {
         </p>
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
+          const isPricing = href === "/pricing";
+          const accent = isPricing ? "#7c3aed" : "#16a34a";
           return (
             <Link key={href} href={href} style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "7px 8px", borderRadius: "8px",
-              fontSize: "12.5px", fontWeight: active ? "600" : "500",
-              color: active ? "#16a34a" : "#6b7280",
-              background: active ? "#f0fdf4" : "transparent",
+              fontSize: "12.5px", fontWeight: active || isPricing ? "600" : "500",
+              color: active ? accent : isPricing ? "#7c3aed" : "#6b7280",
+              background: active ? (isPricing ? "#f5f3ff" : "#f0fdf4") : isPricing ? "#faf5ff" : "transparent",
               textDecoration: "none", marginBottom: "1px",
               transition: "all 0.15s",
-              borderLeft: active ? "2px solid #16a34a" : "2px solid transparent",
+              borderLeft: active ? `2px solid ${accent}` : "2px solid transparent",
             }}>
-              <Icon size={15} color={active ? "#16a34a" : "#c4c4c4"} />
+              <Icon size={15} color={active || isPricing ? accent : "#c4c4c4"} />
               {label}
             </Link>
           );

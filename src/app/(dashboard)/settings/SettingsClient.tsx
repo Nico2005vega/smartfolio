@@ -229,13 +229,20 @@ export default function SettingsClient({ profile, userId, email, cvConfig }: Pro
               ))}
             </div>
 
-            <div className="mt-5 pt-5 border-t border-gray-100">
+            <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap gap-3">
               <Link
                 href="/profile"
                 className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-opacity hover:opacity-90"
                 style={{ background: "#16a34a" }}
               >
                 <User size={14} /> Editar perfil completo
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-opacity hover:opacity-90"
+                style={{ background: "#7c3aed" }}
+              >
+                <Zap size={14} /> Cambiar plan
               </Link>
             </div>
           </div>

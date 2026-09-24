@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   X, GraduationCap, LayoutDashboard, User,
-  BookOpen, FileText, Palette, Settings, Shield, Tag
+  BookOpen, FileText, Palette, Settings, Shield, Tag, Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/academic",   label: "Formación",   icon: BookOpen },
   { href: "/documents",  label: "Documentos",  icon: FileText },
   { href: "/cv-builder", label: "Generar CV",  icon: Palette },
+  { href: "/pricing",    label: "Planes",      icon: Sparkles },
 ];
 
 const adminItems = [
@@ -136,20 +137,25 @@ export default function MobileNav({ role, firstName, lastName, email, plan, phot
           <p style={{ fontSize: "10px", fontWeight: "600", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "1px", padding: "8px 12px 4px" }}>
             Principal
           </p>
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href}
-              style={{
-                display: "flex", alignItems: "center", gap: "12px",
-                padding: "11px 12px", borderRadius: "10px",
-                fontSize: "14px", fontWeight: isActive(href) ? "600" : "500",
-                color: isActive(href) ? "#16a34a" : "#374151",
-                background: isActive(href) ? "#f0fdf4" : "transparent",
-                textDecoration: "none", marginBottom: "2px",
-              }}>
-              <Icon size={18} color={isActive(href) ? "#16a34a" : "#9ca3af"} />
-              {label}
-            </Link>
-          ))}
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = isActive(href);
+            const isPricing = href === "/pricing";
+            const accent = isPricing ? "#7c3aed" : "#16a34a";
+            return (
+              <Link key={href} href={href}
+                style={{
+                  display: "flex", alignItems: "center", gap: "12px",
+                  padding: "11px 12px", borderRadius: "10px",
+                  fontSize: "14px", fontWeight: active || isPricing ? "600" : "500",
+                  color: active ? accent : isPricing ? "#7c3aed" : "#374151",
+                  background: active ? (isPricing ? "#f5f3ff" : "#f0fdf4") : isPricing ? "#faf5ff" : "transparent",
+                  textDecoration: "none", marginBottom: "2px",
+                }}>
+                <Icon size={18} color={active || isPricing ? accent : "#9ca3af"} />
+                {label}
+              </Link>
+            );
+          })}
 
           {role === "admin" && (
             <>
