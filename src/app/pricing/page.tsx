@@ -310,7 +310,7 @@ export default async function PricingPage() {
       {/* ── Footer ── */}
       <div style={{ borderTop: "1px solid #e5e7eb", padding: "20px 32px", textAlign: "center" }}>
         <p style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}>
-          © 2025 Smartfolio · Nicolás Vega & Juan Carlos Rúgeles · UTS Bucaramanga
+          © 2026 Smartfolio · Nicolás Vega & Juan Carlos Rúgeles · UTS Bucaramanga
         </p>
       </div>
     </div>
