@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { CVData, CVStyleConfig } from "@/types";
+import type { CVData, CVStyleConfig, Skill } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
 import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
@@ -8,10 +8,81 @@ registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
+// Replica exactamente las 4 variantes de la vista previa: chips/bars/dots son
+// listas planas de todas las habilidades; "text" (el único caso que SÍ agrupa
+// por categoría en la vista previa) mantiene esa agrupación.
+function SkillsSection({ skills, skillsSt, accent, fontR, fontB }: {
+  skills: Record<string, Skill[]>; skillsSt: string; accent: string; fontR: string; fontB: string;
+}) {
+  const allSkills = Object.values(skills).flat();
+
+  if (skillsSt === "chips") return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+      {allSkills.map((s) => (
+        <Text key={s.id} style={{
+          fontSize: 7, color: accent, fontFamily: fontR,
+          borderWidth: 0.75, borderColor: accent, borderRadius: 20,
+          paddingHorizontal: 6, paddingVertical: 2, backgroundColor: `${accent}0d`,
+        }}>
+          {s.name}
+        </Text>
+      ))}
+    </View>
+  );
+
+  if (skillsSt === "bars") return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+      {allSkills.slice(0, 10).map((s, i) => {
+        const pct = [85, 70, 90, 75, 80, 65, 88, 72, 78, 68][i % 10];
+        return (
+          <View key={s.id} style={{ width: "45%" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 2 }}>
+              <Text style={{ fontSize: 6.5, color: "#374151", fontFamily: fontR }}>{s.name}</Text>
+              <Text style={{ fontSize: 6.5, color: "#9ca3af" }}>{pct}%</Text>
+            </View>
+            <View style={{ height: 2.5, backgroundColor: "#e5e7eb", borderRadius: 2 }}>
+              <View style={{ height: 2.5, width: `${pct}%`, backgroundColor: accent, borderRadius: 2 }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+
+  if (skillsSt === "dots") return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+      {allSkills.map((s) => (
+        <View key={s.id} style={{ flexDirection: "row", alignItems: "center", gap: 5, width: "45%" }}>
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: accent }} />
+          <Text style={{ fontSize: 7, color: "#6b7280", fontFamily: fontR }}>{s.name}</Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  // text (por defecto) — agrupado por categoría, igual que la vista previa
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+      {Object.entries(skills).map(([cat, list]) => list.length > 0 && (
+        <View key={cat} style={{ minWidth: 120 }}>
+          <Text style={{ fontSize: 7.5, fontFamily: fontB, color: "#6b7280", marginBottom: 2 }}>
+            {SKILL_CATEGORY_LABELS[cat as keyof typeof SKILL_CATEGORY_LABELS]}
+          </Text>
+          <Text style={{ fontSize: 7.5, color: "#9ca3af", lineHeight: 1.5, fontFamily: fontR }}>
+            {list.map((s) => s.name).join("  ·  ")}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function CVDocumentExecutive({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
-  const accent = config?.accent_color ?? "#374151";
-  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name);
+  const cfg = config as CVStyleConfig | undefined;
+  const accent = cfg?.accent_color ?? "#374151";
+  const { regular: fontR, bold: fontB } = resolvePdfFont(cfg?.font_name);
+  const skillsSt = cfg?.skills_style ?? "chips";
 
   const styles = StyleSheet.create({
     page:   { padding: 42, fontFamily: fontR, fontSize: 9, color: "#374151" },
@@ -28,10 +99,6 @@ export default function CVDocumentExecutive({ data, watermark }: Props) {
     rSub:   { fontSize:7.5, color:"#6b7280", marginTop:2 },
     rDesc:  { fontSize:7, color:"#9ca3af", marginTop:2, lineHeight:1.4 },
     rDate:  { fontSize:7.5, color:"#9ca3af", textAlign:"right", minWidth:60 },
-    skillGrid:{ flexDirection:"row", flexWrap:"wrap", gap:12, marginTop:4 },
-    skillCat: { minWidth:120 },
-    catLabel: { fontSize:7.5, fontFamily:fontB, color:"#6b7280", marginBottom:2 },
-    catSkills:{ fontSize:7.5, color:"#9ca3af", lineHeight:1.5 },
   });
 
   return (
@@ -81,18 +148,7 @@ export default function CVDocumentExecutive({ data, watermark }: Props) {
         {Object.values(skills).flat().length > 0 && (
           <View>
             <Text style={styles.secT}>Competencias</Text>
-            <View style={styles.skillGrid}>
-              {Object.entries(skills).map(([cat, list]) => list.length > 0 && (
-                <View key={cat} style={styles.skillCat}>
-                  <Text style={styles.catLabel}>
-                    {SKILL_CATEGORY_LABELS[cat as keyof typeof SKILL_CATEGORY_LABELS]}
-                  </Text>
-                  <Text style={styles.catSkills}>
-                    {list.map(s => s.name).join("  ·  ")}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <SkillsSection skills={skills} skillsSt={skillsSt} accent={accent} fontR={fontR} fontB={fontB} />
           </View>
         )}
       </Page>
