@@ -21,7 +21,7 @@ export default function CVDocumentClassic({ data, watermark }: Props) {
     bio:        { fontSize: 8, color: "#6b7280", lineHeight: 1.5, marginTop: 6 },
     sectionT:   { fontSize: 8, fontFamily:fontB, textTransform:"uppercase",
                   letterSpacing: 1.5, color: accent, paddingBottom: 3,
-                  borderBottomWidth: 0.5, borderBottomColor: accent+"88", marginBottom: 8, marginTop: 14 },
+                  borderBottomWidth: 0.5, borderBottomColor: accent, marginBottom: 8, marginTop: 14 },
     row:        { flexDirection:"row", justifyContent:"space-between", marginBottom: 6 },
     rTitle:     { fontFamily:fontB, fontSize: 9 },
     rSub:       { fontSize: 7.5, color:"#6b7280", marginTop: 1 },

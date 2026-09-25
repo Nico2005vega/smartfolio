@@ -28,7 +28,7 @@ export default function CVDocumentTech({ data, watermark }: Props) {
     sbContact:{ fontSize:7.5, color:"#94a3b8", marginBottom:4 },
     sbCatLbl: { fontSize:6.5, color:`${accent}bb`, textTransform:"uppercase", letterSpacing:1, marginBottom:4, marginTop:9, fontFamily:"Courier" },
     chipRow:  { flexDirection:"row", flexWrap:"wrap", gap:3 },
-    chip:     { fontSize:7, color:accent, backgroundColor:`${accent}1a`, borderRadius:3, paddingHorizontal:4, paddingVertical:1, border:`1 solid ${accent}33`, fontFamily:"Courier" },
+    chip:     { fontSize:7, color:accent, backgroundColor:`${accent}1a`, borderRadius:3, paddingHorizontal:4, paddingVertical:1, border:`1 solid ${accent}`, fontFamily:"Courier" },
     hComment: { fontSize:6.5, color:"#94a3b8", fontFamily:"Courier", marginBottom:3 },
     hName:    { fontSize:18, fontFamily:fontB, color:"#0f172a", marginBottom:3 },
     hBio:     { fontSize:8, color:"#475569", lineHeight:1.6, marginBottom:4, maxWidth:360 },

@@ -127,7 +127,7 @@ function SidebarSkills({ allSkills, cfg }: { allSkills: Skill[]; cfg: Cfg }) {
   return (
     <View style={{ flexDirection: "column", gap: 3 }}>
       {allSkills.slice(0, 12).map(s => (
-        <View key={s.id} style={{ backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 0.75, borderColor: "rgba(255,255,255,0.25)", borderRadius: 3, paddingVertical: 2.5, paddingHorizontal: 6, alignSelf: "flex-start" }}>
+        <View key={s.id} style={{ backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 0.75, borderColor: "#e5e7eb", borderRadius: 3, paddingVertical: 2.5, paddingHorizontal: 6, alignSelf: "flex-start" }}>
           <Text style={{ fontSize: px - 2, color: "white", fontFamily: fontR }}>{s.name}</Text>
         </View>
       ))}

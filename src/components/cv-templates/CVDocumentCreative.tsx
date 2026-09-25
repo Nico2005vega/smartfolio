@@ -16,7 +16,7 @@ export default function CVDocumentCreative({ data, watermark }: Props) {
   const s = StyleSheet.create({
     page:       { fontFamily:fontR, fontSize:9, color:"#374151" },
     header:     { backgroundColor:accent, padding:"22 28", flexDirection:"row", alignItems:"center", gap:14 },
-    avatar:     { width:54, height:54, borderRadius:8, border:"2 solid rgba(255,255,255,0.4)" },
+    avatar:     { width:54, height:54, borderRadius:8, border:"2 solid #ffffff" },
     avPlaceh:   { width:54, height:54, borderRadius:8, backgroundColor:"rgba(255,255,255,0.2)" },
     hName:      { fontSize:17, fontFamily:fontB, color:"white", marginBottom:4 },
     hContact:   { flexDirection:"row", flexWrap:"wrap", gap:8, fontSize:7.5, color:"rgba(255,255,255,0.9)" },
@@ -26,7 +26,7 @@ export default function CVDocumentCreative({ data, watermark }: Props) {
     sbr:        { width:148, backgroundColor:"#f8fafc", borderLeft:"1 solid #e2e8f0", padding:"18 13" },
     sbTitle:    { fontSize:6.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:1, color:"#94a3b8", marginBottom:10 },
     sbCat:      { fontSize:6.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:0.5, color:accent, marginBottom:4, marginTop:9 },
-    skillChip:  { fontSize:7.5, color:accent, borderRadius:4, paddingHorizontal:5, paddingVertical:1, marginBottom:3, marginRight:3, border:`1 solid ${accent}55`, backgroundColor:`${accent}18` },
+    skillChip:  { fontSize:7.5, color:accent, borderRadius:4, paddingHorizontal:5, paddingVertical:1, marginBottom:3, marginRight:3, border:`1 solid ${accent}`, backgroundColor:`${accent}18` },
     chipRow:    { flexDirection:"row", flexWrap:"wrap", gap:3 },
     secWrap:    { marginBottom:12 },
     secRow:     { flexDirection:"row", alignItems:"center", gap:6, marginBottom:7 },
