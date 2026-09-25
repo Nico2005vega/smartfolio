@@ -14,12 +14,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: records }, { data: docs }, { data: skills }, { data: careerInsight }] = await Promise.all([
+  const [{ data: profile }, { data: records }, { data: docs }, { data: skills }, { data: careerInsight }, { data: cvConfig }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("academic_records").select("id,record_type,title,institution,created_at").eq("profile_id", user.id).order("created_at", { ascending: false }),
     supabase.from("documents").select("id").eq("profile_id", user.id),
     supabase.from("skills").select("id").eq("profile_id", user.id),
     supabase.from("career_insights").select("*").eq("profile_id", user.id).maybeSingle(),
+    supabase.from("cv_configurations").select("last_generated_at").eq("profile_id", user.id).maybeSingle(),
   ]);
 
   const byType = (records ?? []).reduce<Record<string, number>>((acc, r) => {
@@ -194,7 +195,7 @@ export default async function DashboardPage() {
                 { label:"Agrega tu título académico",  done:hasRecords,       href:"/academic/new"  },
                 { label:"Sube un documento soporte",   done:hasDocs,          href:"/documents"     },
                 { label:"Agrega tus habilidades",      done:totalSkills > 0,  href:"/skills"        },
-                { label:"Genera y descarga tu CV",     done:false,            href:"/cv-builder"    },
+                { label:"Genera y descarga tu CV",     done:!!cvConfig?.last_generated_at, href:"/cv-builder" },
               ].map(item => (
                 <Link key={item.label} href={item.done ? "#" : item.href} style={{ textDecoration:"none" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 10px", borderRadius:"10px", background:item.done?"#f0fdf4":"#fafafa", border:`1px solid ${item.done?"#bbf7d0":"#f0f0f0"}` }}>

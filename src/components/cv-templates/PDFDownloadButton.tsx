@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import type { CVData, UserPlan } from "@/types";
 import type { DocumentProps } from "@react-pdf/renderer";
 import { hasFeature } from "@/lib/plan";
+import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   data:        CVData;
   fileName:    string;
   templateKey: string;
   plan:        UserPlan;
+  profileId:   string;
 }
 
 async function imageToBase64(url: string): Promise<string> {
@@ -44,9 +46,10 @@ const PDF_MODULES: Record<string, () => Promise<{ default: ComponentType<{ data:
   academic:  () => import("./CVDocumentClassic"),
 };
 
-export default function PDFDownloadButton({ data, fileName, templateKey, plan }: Props) {
+export default function PDFDownloadButton({ data, fileName, templateKey, plan, profileId }: Props) {
   const [loading, setLoading] = useState(false);
   const watermark = !hasFeature("pdfWithoutWatermark", plan);
+  const supabase = createClient();
 
   const handleDownload = async () => {
     setLoading(true);
@@ -80,6 +83,17 @@ export default function PDFDownloadButton({ data, fileName, templateKey, plan }:
       URL.revokeObjectURL(url);
 
       toast.success("CV descargado correctamente ✓");
+
+      // Marca "Genera y descarga tu CV" como completo en la lista de tareas
+      // del dashboard. Se hace aquí (no solo al guardar) porque esta es la
+      // acción real que el checklist promete: descargar el CV, no solo
+      // configurarlo.
+      supabase
+        .from("cv_configurations")
+        .upsert({ profile_id: profileId, last_generated_at: new Date().toISOString() }, { onConflict: "profile_id" })
+        .then(({ error }) => {
+          if (error) console.error("Error registrando la descarga del CV:", error.message);
+        });
 
     } catch (err) {
       console.error("Error generando PDF:", err);
