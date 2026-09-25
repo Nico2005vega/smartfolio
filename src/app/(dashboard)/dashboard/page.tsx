@@ -4,6 +4,8 @@ import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType } from "@/types"
 import Link from "next/link";
 import { Plus, FileText, Palette, ArrowRight, TrendingUp, Award, BookOpen } from "lucide-react";
 import { formatDateRelative } from "@/lib/utils";
+import JobMatchCard from "@/components/dashboard/JobMatchCard";
+import type { UserPlan } from "@/types";
 
 export const metadata = { title: "Dashboard" };
 
@@ -12,11 +14,12 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: records }, { data: docs }, { data: skills }] = await Promise.all([
+  const [{ data: profile }, { data: records }, { data: docs }, { data: skills }, { data: careerInsight }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("academic_records").select("id,record_type,title,institution,created_at").eq("profile_id", user.id).order("created_at", { ascending: false }),
     supabase.from("documents").select("id").eq("profile_id", user.id),
     supabase.from("skills").select("id").eq("profile_id", user.id),
+    supabase.from("career_insights").select("*").eq("profile_id", user.id).maybeSingle(),
   ]);
 
   const byType = (records ?? []).reduce<Record<string, number>>((acc, r) => {
@@ -174,6 +177,13 @@ export default async function DashboardPage() {
               Ver mi portafolio →
             </Link>
           </div>
+
+          {/* Match laboral con IA */}
+          <JobMatchCard
+            plan={(profile?.plan as UserPlan) ?? "free"}
+            city={profile?.city ?? null}
+            initialInsight={careerInsight ?? null}
+          />
 
           {/* Checklist */}
           <div style={{ background:"white", borderRadius:"16px", border:"1px solid #f0f0f0", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
