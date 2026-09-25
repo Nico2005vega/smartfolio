@@ -10,6 +10,24 @@ import WompiCheckoutButton from "@/components/payments/WompiCheckoutButton";
 
 export const metadata = { title: "Precios" };
 
+// ── Correo pre-llenado para "Contactar ventas" (plan Business) ──
+// Se abre en el cliente de correo del visitante, ya listo para enviar
+// con un formato organizado; solo debe completar los 3 campos y dar Enviar.
+const BUSINESS_CONTACT_EMAIL = "contacto.smartfolio@gmail.com";
+const BUSINESS_MAILTO_SUBJECT = encodeURIComponent("Interés en el plan Business de Smartfolio");
+const BUSINESS_MAILTO_BODY = encodeURIComponent(
+`Hola equipo de Smartfolio,
+
+Estoy interesado/a en conocer más sobre el plan Business para mi institución.
+
+Nombre de la institución: 
+Número aproximado de usuarios: 
+Motivo de contacto: 
+
+¡Gracias!`
+);
+const BUSINESS_MAILTO_HREF = `mailto:${BUSINESS_CONTACT_EMAIL}?subject=${BUSINESS_MAILTO_SUBJECT}&body=${BUSINESS_MAILTO_BODY}`;
+
 interface PlanFeature { text: string; included: boolean; }
 interface PlanDef {
   key: UserPlan;
@@ -238,7 +256,7 @@ export default async function PricingPage() {
                   </div>
                 ) : plan.key === "business" ? (
                   <a
-                    href="mailto:ventas@smartfolio.co"
+                    href={BUSINESS_MAILTO_HREF}
                     className="pricing-cta"
                     style={{ textAlign: "center", padding: "13px", background: "#111827", color: "white", borderRadius: "12px", fontSize: "14px", fontWeight: "700", textDecoration: "none" }}
                   >
