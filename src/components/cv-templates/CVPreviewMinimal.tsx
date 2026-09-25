@@ -6,9 +6,9 @@ interface Props { data: CVData; }
 function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:    String(c?.accent_color ?? "#18181b"),
-    font:      c?.font_family === "sans" ? "system-ui,-apple-system,sans-serif"
+    font:      c?.font_name ?? (c?.font_family === "sans" ? "system-ui,-apple-system,sans-serif"
              : c?.font_family === "mono" ? "'Courier New',Consolas,monospace"
-             : "Georgia,'Times New Roman',serif",   // serif default for minimal
+             : "Georgia,'Times New Roman',serif"),   // serif default for minimal
     px:        Number(c?.font_size   ?? 13),
     lh:        Number(c?.line_height ?? 1.65),
     secStyle:  (c?.section_style ?? "minimal") as string,

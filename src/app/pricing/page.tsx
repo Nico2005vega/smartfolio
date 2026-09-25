@@ -108,7 +108,7 @@ const FAQS = [
   },
   {
     q: "¿Qué pasa si cancelo?",
-    a: "Vuelves automáticamente al plan Free. Tus registros, documentos y CV no se borran — solo se aplican de nuevo los límites gratuitos.",
+    a: "Escríbenos y coordinamos el cambio. Tus registros, documentos y CV nunca se borran — solo se ajustan los límites según el plan en el que quedes.",
   },
   {
     q: "¿El plan Business tiene un precio fijo?",

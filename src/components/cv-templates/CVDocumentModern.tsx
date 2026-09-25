@@ -1,17 +1,18 @@
 import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CVData, CVStyleConfig, AcademicRecord, Skill } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
 function getCfg(c: CVStyleConfig | undefined) {
-  const family = c?.font_family === "serif" ? { r: "Times-Roman", b: "Times-Bold" }
-    : c?.font_family === "mono" ? { r: "Courier", b: "Courier-Bold" }
-    : { r: "Helvetica", b: "Helvetica-Bold" };
+  const family = resolvePdfFont(c?.font_name);
   return {
     accent:    String(c?.accent_color ?? "#059669"),
-    fontR:     family.r,
-    fontB:     family.b,
+    fontR:     family.regular,
+    fontB:     family.bold,
     px:        Number(c?.font_size ?? 13) * 0.72,
     lh:        Number(c?.line_height ?? 1.4),
     photoR:    c?.photo_shape === "square" ? 4 : c?.photo_shape === "rounded" ? 14 : 31,

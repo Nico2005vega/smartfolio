@@ -1,7 +1,10 @@
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
@@ -9,28 +12,31 @@ export default function CVDocumentTech({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent  = config?.accent_color ?? "#06b6d4";
   const darkBg  = "#0f172a";
+  // El cuerpo sigue la fuente elegida; los detalles "tipo código" se quedan
+  // fijos en Courier a propósito — igual que en la vista previa de Tech.
+  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name);
 
   const s = StyleSheet.create({
-    page:     { flexDirection:"row", fontFamily:"Helvetica", fontSize:9, color:"#374151" },
+    page:     { flexDirection:"row", fontFamily:fontR, fontSize:9, color:"#374151" },
     sidebar:  { width:150, backgroundColor:darkBg, padding:"24 16", color:"#e2e8f0" },
     main:     { flex:1, padding:"24 22", backgroundColor:"white" },
     sbComment:{ fontSize:6.5, color:accent, letterSpacing:1.5, textTransform:"uppercase", marginBottom:7, fontFamily:"Courier" },
     avImg:    { width:52, height:52, borderRadius:7, border:`2 solid ${accent}`, marginBottom:9 },
     avPlaceh: { width:52, height:52, borderRadius:7, backgroundColor:`${accent}22`, border:`2 solid ${accent}`, marginBottom:9 },
-    avInit:   { fontSize:18, fontFamily:"Helvetica-Bold", color:accent, textAlign:"center", paddingTop:12 },
-    sbName:   { fontSize:12, fontFamily:"Helvetica-Bold", color:"#f8fafc", lineHeight:1.3, marginBottom:14 },
+    avInit:   { fontSize:18, fontFamily:fontB, color:accent, textAlign:"center", paddingTop:12 },
+    sbName:   { fontSize:12, fontFamily:fontB, color:"#f8fafc", lineHeight:1.3, marginBottom:14 },
     sbContact:{ fontSize:7.5, color:"#94a3b8", marginBottom:4 },
     sbCatLbl: { fontSize:6.5, color:`${accent}bb`, textTransform:"uppercase", letterSpacing:1, marginBottom:4, marginTop:9, fontFamily:"Courier" },
     chipRow:  { flexDirection:"row", flexWrap:"wrap", gap:3 },
     chip:     { fontSize:7, color:accent, backgroundColor:`${accent}1a`, borderRadius:3, paddingHorizontal:4, paddingVertical:1, border:`1 solid ${accent}33`, fontFamily:"Courier" },
     hComment: { fontSize:6.5, color:"#94a3b8", fontFamily:"Courier", marginBottom:3 },
-    hName:    { fontSize:18, fontFamily:"Helvetica-Bold", color:"#0f172a", marginBottom:3 },
+    hName:    { fontSize:18, fontFamily:fontB, color:"#0f172a", marginBottom:3 },
     hBio:     { fontSize:8, color:"#475569", lineHeight:1.6, marginBottom:4, maxWidth:360 },
     hBar:     { borderBottomWidth:2, borderBottomColor:accent, marginBottom:14, marginTop:6 },
     secComment:{ fontSize:6.5, color:accent, textTransform:"uppercase", letterSpacing:1.5, fontFamily:"Courier", marginBottom:6, marginTop:12 },
     card:     { flexDirection:"row", alignItems:"flex-start", backgroundColor:"#f8fafc", borderRadius:4, borderLeft:`3 solid ${accent}`, padding:"7 9", marginBottom:5, gap:8 },
     cardMain: { flex:1 },
-    cardTitle:{ fontFamily:"Helvetica-Bold", fontSize:9, color:"#0f172a" },
+    cardTitle:{ fontFamily:fontB, fontSize:9, color:"#0f172a" },
     cardSub:  { fontSize:7, color:"#64748b", marginTop:2, fontFamily:"Courier" },
     cardDesc: { fontSize:7, color:"#94a3b8", marginTop:2, lineHeight:1.4 },
     cardYear: { fontSize:7, color:accent, backgroundColor:`${accent}1a`, borderRadius:3, paddingHorizontal:5, paddingVertical:1, fontFamily:"Courier" },

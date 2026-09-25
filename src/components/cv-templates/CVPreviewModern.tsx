@@ -8,11 +8,11 @@ interface Props { data: CVData; }
 function getCfg(config: CVStyleConfig) {
   const cfg = config;
   const accent       = config?.accent_color    ?? "#059669";
-  const fontFace     = cfg.font_family === "serif"
+  const fontFace     = cfg.font_name ?? (cfg.font_family === "serif"
     ? "Georgia, 'Times New Roman', serif"
     : cfg.font_family === "mono"
     ? "'Courier New', Consolas, monospace"
-    : "system-ui, -apple-system, sans-serif";
+    : "system-ui, -apple-system, sans-serif");
   return {
     accent, fontFace,
     basePx:       cfg.font_size    ?? 13,

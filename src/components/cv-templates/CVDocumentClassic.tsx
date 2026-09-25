@@ -1,25 +1,29 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
 export default function CVDocumentClassic({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#16a34a";
+  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name);
 
   const styles = StyleSheet.create({
-    page:       { padding: 36, fontFamily: "Helvetica", fontSize: 9, color: "#374151" },
+    page:       { padding: 36, fontFamily: fontR, fontSize: 9, color: "#374151" },
     header:     { borderBottomWidth: 2, borderBottomColor: accent, paddingBottom: 12, marginBottom: 16 },
-    name:       { fontSize: 18, fontFamily: "Helvetica-Bold", color: "#111827", marginBottom: 4 },
+    name:       { fontSize: 18, fontFamily: fontB, color: "#111827", marginBottom: 4 },
     contactRow: { flexDirection:"row", flexWrap:"wrap", gap: 8, fontSize: 8, color: "#6b7280", marginTop: 4 },
     bio:        { fontSize: 8, color: "#6b7280", lineHeight: 1.5, marginTop: 6 },
-    sectionT:   { fontSize: 8, fontFamily:"Helvetica-Bold", textTransform:"uppercase",
+    sectionT:   { fontSize: 8, fontFamily:fontB, textTransform:"uppercase",
                   letterSpacing: 1.5, color: accent, paddingBottom: 3,
                   borderBottomWidth: 0.5, borderBottomColor: accent+"88", marginBottom: 8, marginTop: 14 },
     row:        { flexDirection:"row", justifyContent:"space-between", marginBottom: 6 },
-    rTitle:     { fontFamily:"Helvetica-Bold", fontSize: 9 },
+    rTitle:     { fontFamily:fontB, fontSize: 9 },
     rSub:       { fontSize: 7.5, color:"#6b7280", marginTop: 1 },
     rDate:      { fontSize: 7.5, color:"#9ca3af", textAlign:"right" },
     skillRow:   { flexDirection:"row", flexWrap:"wrap", gap:4, marginTop:4 },
@@ -77,7 +81,7 @@ export default function CVDocumentClassic({ data, watermark }: Props) {
             <Text style={styles.sectionT}>Competencias</Text>
             {Object.entries(skills).map(([cat, list]) => list.length > 0 && (
               <View key={cat} style={{ marginBottom: 6 }}>
-                <Text style={{ fontSize:7.5, fontFamily:"Helvetica-Bold", color:"#6b7280", marginBottom:3 }}>
+                <Text style={{ fontSize:7.5, fontFamily:fontB, color:"#6b7280", marginBottom:3 }}>
                   {SKILL_CATEGORY_LABELS[cat as keyof typeof SKILL_CATEGORY_LABELS]}
                 </Text>
                 <View style={styles.skillRow}>

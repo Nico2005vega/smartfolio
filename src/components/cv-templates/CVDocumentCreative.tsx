@@ -1,36 +1,40 @@
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
 export default function CVDocumentCreative({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#7c3aed";
+  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name);
 
   const s = StyleSheet.create({
-    page:       { fontFamily:"Helvetica", fontSize:9, color:"#374151" },
+    page:       { fontFamily:fontR, fontSize:9, color:"#374151" },
     header:     { backgroundColor:accent, padding:"22 28", flexDirection:"row", alignItems:"center", gap:14 },
     avatar:     { width:54, height:54, borderRadius:8, border:"2 solid rgba(255,255,255,0.4)" },
     avPlaceh:   { width:54, height:54, borderRadius:8, backgroundColor:"rgba(255,255,255,0.2)" },
-    hName:      { fontSize:17, fontFamily:"Helvetica-Bold", color:"white", marginBottom:4 },
+    hName:      { fontSize:17, fontFamily:fontB, color:"white", marginBottom:4 },
     hContact:   { flexDirection:"row", flexWrap:"wrap", gap:8, fontSize:7.5, color:"rgba(255,255,255,0.9)" },
     hBio:       { fontSize:7.5, color:"rgba(255,255,255,0.88)", lineHeight:1.5, marginTop:4 },
     body:       { flexDirection:"row", flex:1 },
     main:       { flex:1, padding:"18 24" },
     sbr:        { width:148, backgroundColor:"#f8fafc", borderLeft:"1 solid #e2e8f0", padding:"18 13" },
-    sbTitle:    { fontSize:6.5, fontFamily:"Helvetica-Bold", textTransform:"uppercase", letterSpacing:1, color:"#94a3b8", marginBottom:10 },
-    sbCat:      { fontSize:6.5, fontFamily:"Helvetica-Bold", textTransform:"uppercase", letterSpacing:0.5, color:accent, marginBottom:4, marginTop:9 },
+    sbTitle:    { fontSize:6.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:1, color:"#94a3b8", marginBottom:10 },
+    sbCat:      { fontSize:6.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:0.5, color:accent, marginBottom:4, marginTop:9 },
     skillChip:  { fontSize:7.5, color:accent, borderRadius:4, paddingHorizontal:5, paddingVertical:1, marginBottom:3, marginRight:3, border:`1 solid ${accent}55`, backgroundColor:`${accent}18` },
     chipRow:    { flexDirection:"row", flexWrap:"wrap", gap:3 },
     secWrap:    { marginBottom:12 },
     secRow:     { flexDirection:"row", alignItems:"center", gap:6, marginBottom:7 },
     accentBar:  { width:3, height:12, backgroundColor:accent, borderRadius:2 },
-    secLabel:   { fontSize:7.5, fontFamily:"Helvetica-Bold", textTransform:"uppercase", letterSpacing:1.5, color:accent },
+    secLabel:   { fontSize:7.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:1.5, color:accent },
     card:       { backgroundColor:"#f9fafb", borderRadius:5, borderLeft:`3 solid ${accent}55`, padding:"7 10", marginBottom:5 },
     cardTop:    { flexDirection:"row", justifyContent:"space-between", alignItems:"flex-start", gap:6 },
-    cardTitle:  { fontFamily:"Helvetica-Bold", fontSize:9, color:"#111827", flex:1 },
+    cardTitle:  { fontFamily:fontB, fontSize:9, color:"#111827", flex:1 },
     badge:      { backgroundColor:accent, borderRadius:10, paddingHorizontal:5, paddingVertical:1 },
     badgeTxt:   { fontSize:7, color:"white" },
     cardSub:    { fontSize:7.5, color:"#6b7280", marginTop:2 },

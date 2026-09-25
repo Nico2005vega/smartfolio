@@ -1,32 +1,36 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { SKILL_CATEGORY_LABELS } from "@/types";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
 export default function CVDocumentExecutive({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#374151";
+  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name);
 
   const styles = StyleSheet.create({
-    page:   { padding: 42, fontFamily: "Helvetica", fontSize: 9, color: "#374151" },
-    name:   { fontSize: 20, fontFamily:"Helvetica-Bold", textTransform:"uppercase",
+    page:   { padding: 42, fontFamily: fontR, fontSize: 9, color: "#374151" },
+    name:   { fontSize: 20, fontFamily:fontB, textTransform:"uppercase",
               color:"#111827", letterSpacing: 2 },
     bar:    { width:32, height:2, backgroundColor: accent, marginVertical: 8 },
     contact:{ flexDirection:"row", flexWrap:"wrap", gap:6, fontSize:7.5, color:"#9ca3af", marginBottom:10 },
     bio:    { fontSize:8, color:"#6b7280", lineHeight:1.6, marginBottom:14, maxWidth:400 },
-    secT:   { fontSize:7, fontFamily:"Helvetica-Bold", textTransform:"uppercase",
+    secT:   { fontSize:7, fontFamily:fontB, textTransform:"uppercase",
               letterSpacing:2, color: accent, marginBottom: 8, marginTop:14 },
     row:    { flexDirection:"row", justifyContent:"space-between", marginBottom:8, paddingBottom:6,
               borderBottomWidth:0.3, borderBottomColor:"#e5e7eb" },
-    rTitle: { fontFamily:"Helvetica-Bold", fontSize:9, color:"#111827" },
+    rTitle: { fontFamily:fontB, fontSize:9, color:"#111827" },
     rSub:   { fontSize:7.5, color:"#6b7280", marginTop:2 },
     rDesc:  { fontSize:7, color:"#9ca3af", marginTop:2, lineHeight:1.4 },
     rDate:  { fontSize:7.5, color:"#9ca3af", textAlign:"right", minWidth:60 },
     skillGrid:{ flexDirection:"row", flexWrap:"wrap", gap:12, marginTop:4 },
     skillCat: { minWidth:120 },
-    catLabel: { fontSize:7.5, fontFamily:"Helvetica-Bold", color:"#6b7280", marginBottom:2 },
+    catLabel: { fontSize:7.5, fontFamily:fontB, color:"#6b7280", marginBottom:2 },
     catSkills:{ fontSize:7.5, color:"#9ca3af", lineHeight:1.5 },
   });
 

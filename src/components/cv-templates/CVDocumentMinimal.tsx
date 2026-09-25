@@ -1,6 +1,9 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { CVData } from "@/types";
+import type { CVData, CVStyleConfig } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { registerPdfFonts, resolvePdfFont } from "@/lib/pdfFonts";
+
+registerPdfFonts();
 
 interface Props { data: CVData; watermark?: boolean; }
 
@@ -8,19 +11,21 @@ export default function CVDocumentMinimal({ data, watermark }: Props) {
   const { profile, sections, skills, config } = data;
   const accent = config?.accent_color ?? "#18181b";
   const allSkills = Object.values(skills).flat();
+  // Minimal es serif por defecto — solo cambia si el usuario elige otra fuente
+  const { regular: fontR, bold: fontB } = resolvePdfFont((config as CVStyleConfig | undefined)?.font_name, { regular: "Times-Roman", bold: "Times-Bold" });
 
   const s = StyleSheet.create({
-    page:     { padding:"38 44", fontFamily:"Times-Roman", fontSize:9, color:"#27272a", backgroundColor:"white" },
-    name:     { fontSize:22, fontFamily:"Times-Bold", letterSpacing:-0.3, color:"#09090b", marginBottom:8 },
+    page:     { padding:"38 44", fontFamily:fontR, fontSize:9, color:"#27272a", backgroundColor:"white" },
+    name:     { fontSize:22, fontFamily:fontB, letterSpacing:-0.3, color:"#09090b", marginBottom:8 },
     rule:     { borderBottomWidth:0.7, borderBottomColor:"#e4e4e7", marginBottom:10 },
     contact:  { flexDirection:"row", flexWrap:"wrap", gap:14, fontSize:8, color:"#71717a", marginBottom:6 },
     bio:      { fontSize:8, color:"#52525b", lineHeight:1.7, marginBottom:16, maxWidth:400 },
     secHead:  { flexDirection:"row", alignItems:"center", gap:10, marginBottom:9, marginTop:14 },
-    secLbl:   { fontSize:6.5, fontFamily:"Times-Bold", textTransform:"uppercase", letterSpacing:2, color:accent },
+    secLbl:   { fontSize:6.5, fontFamily:fontB, textTransform:"uppercase", letterSpacing:2, color:accent },
     secLine:  { flex:1, borderBottomWidth:0.5, borderBottomColor:"#e4e4e7" },
     row:      { flexDirection:"row", justifyContent:"space-between", alignItems:"flex-start", marginBottom:7, gap:10 },
     rMain:    { flex:1 },
-    rTitle:   { fontFamily:"Times-Bold", fontSize:9.5, color:"#09090b" },
+    rTitle:   { fontFamily:fontB, fontSize:9.5, color:"#09090b" },
     rSub:     { fontSize:7.5, color:"#71717a", marginTop:2 },
     rDesc:    { fontSize:7, color:"#a1a1aa", marginTop:2, lineHeight:1.5 },
     rDate:    { fontSize:7.5, color:"#a1a1aa", textAlign:"right", minWidth:42, flexShrink:0 },

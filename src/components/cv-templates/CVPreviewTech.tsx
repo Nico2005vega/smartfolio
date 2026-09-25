@@ -7,9 +7,9 @@ interface Props { data: CVData; }
 function getCfg(c: CVStyleConfig | undefined) {
   return {
     accent:    String(c?.accent_color ?? "#06b6d4"),
-    font:      c?.font_family === "serif" ? "Georgia,'Times New Roman',serif"
+    font:      c?.font_name ?? (c?.font_family === "serif" ? "Georgia,'Times New Roman',serif"
              : c?.font_family === "sans"  ? "system-ui,-apple-system,sans-serif"
-             : "'Courier New',Consolas,monospace",   // mono default for tech
+             : "'Courier New',Consolas,monospace"),   // mono default for tech
     mono:      "'Courier New',Consolas,monospace",
     px:        Number(c?.font_size   ?? 12),
     lh:        Number(c?.line_height ?? 1.55),
