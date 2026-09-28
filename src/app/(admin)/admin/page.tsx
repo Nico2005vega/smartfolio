@@ -27,7 +27,7 @@ export default async function AdminPage() {
     supabase.from("profiles")
       .select("id,first_name,last_name,plan,role,created_at,visit_count")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(100),
     supabase.from("academic_records").select("record_type"),
     supabase.from("profiles")
       .select("created_at")
@@ -62,6 +62,7 @@ export default async function AdminPage() {
       recentUsers={recentUsers ?? []}
       chartByType={chartByType}
       chartByMonth={chartByMonth}
+      currentUserId={user.id}
     />
   );
 }
