@@ -179,7 +179,7 @@ export interface CVStyleConfig extends CVConfiguration {
   card_style?:     "flat" | "shadow" | "bordered" | "accent";
   divider_style?:  "solid" | "dashed" | "dotted" | "double" | "none";
   show_photo?:     boolean;
-  show_phone:      boolean;
+  show_phone?:     boolean;
   show_icons?:     boolean;
   uppercase?:      boolean;
 }
