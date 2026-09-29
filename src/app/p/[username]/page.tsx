@@ -48,7 +48,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
   // En Free/Basic el link de "Verificar" se sigue mostrando igual que
   // siempre (no se le quita nada a nadie), solo que sin el badge especial.
   const showVerifiedBadge = hasFeature("certificateBadge", (profile.plan as UserPlan) ?? "free");
-  {profile.show_phone && profile.phone && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
+  
 
   const skillsByCategory = (skills ?? []).reduce<Record<string, typeof skills>>((acc, s) => {
     acc[s.category] = [...(acc[s.category] ?? []), s]; return acc;
@@ -95,7 +95,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
             </h1>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "10px" }}>
               {profile.city    && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><MapPin size={13} />{profile.city}, {profile.country}</span>}
-              {profile.phone   && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
+              {profile.show_phone && profile.phone && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
               {profile.linkedin_url && (
