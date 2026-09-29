@@ -48,6 +48,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
   // En Free/Basic el link de "Verificar" se sigue mostrando igual que
   // siempre (no se le quita nada a nadie), solo que sin el badge especial.
   const showVerifiedBadge = hasFeature("certificateBadge", (profile.plan as UserPlan) ?? "free");
+  {profile.show_phone && profile.phone && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
 
   const skillsByCategory = (skills ?? []).reduce<Record<string, typeof skills>>((acc, s) => {
     acc[s.category] = [...(acc[s.category] ?? []), s]; return acc;
