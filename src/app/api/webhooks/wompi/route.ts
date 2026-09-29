@@ -41,7 +41,10 @@ export async function POST(req: Request) {
   const toHash = `${concatenatedValues}${body.timestamp}${secret}`;
   const expectedChecksum = crypto.createHash("sha256").update(toHash).digest("hex");
 
-  if (expectedChecksum !== body.signature.checksum) {
+  // Comparación en tiempo constante
+  const expected = Buffer.from(expectedChecksum, "hex");
+  const received = Buffer.from(String(body.signature.checksum), "hex");
+  if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
     console.error("Firma de Wompi inválida — posible intento de suplantación");
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
   }
@@ -67,7 +70,11 @@ export async function POST(req: Request) {
       .update({ plan: parsed.plan })
       .eq("id", parsed.profileId);
 
-    if (profileError) console.error("Error actualizando el plan del perfil:", profileError.message);
+    // Si falla, respondemos 500 para que Wompi reintente el evento
+    if (profileError) {
+      console.error("Error actualizando el plan del perfil:", profileError.message);
+      return NextResponse.json({ error: "No se pudo activar el plan" }, { status: 500 });
+    }
 
     // Registra la suscripción para historial
     const { error: subError } = await admin.from("subscriptions").insert({
@@ -78,7 +85,11 @@ export async function POST(req: Request) {
       external_id: transaction.id,
     });
 
-    if (subError) console.error("Error registrando la suscripción:", subError.message);
+    // 23505 = external_id repetido: el evento ya estaba registrado, no es un error
+    if (subError && subError.code !== "23505") {
+      console.error("Error registrando la suscripción:", subError.message);
+      return NextResponse.json({ error: "No se pudo registrar la suscripción" }, { status: 500 });
+    }
   }
   // Nota: DECLINED, VOIDED o ERROR no requieren acción — el usuario
   // simplemente se queda en su plan actual y puede intentar de nuevo.
