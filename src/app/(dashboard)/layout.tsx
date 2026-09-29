@@ -20,6 +20,9 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .single();
 
+  // Aplica retroactivamente a cuentas creadas antes de este cambio
+  if (!profile?.terms_accepted_at) redirect("/terminos");
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role={profile?.role ?? "student"} />

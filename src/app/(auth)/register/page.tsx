@@ -22,6 +22,7 @@ const benefits = [
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -30,6 +31,10 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    if (!acceptedTerms) {
+      toast.error("Debes aceptar el tratamiento de tus datos personales para continuar");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: data.email,
@@ -39,6 +44,9 @@ export default function RegisterPage() {
     if (error) {
       toast.error(error.message);
     } else {
+      // Ya aceptó explícitamente en este formulario, se registra de inmediato
+      // para que no se le vuelva a pedir en /terminos.
+      await fetch("/api/terms/accept", { method: "POST" }).catch(() => {});
       toast.success("¡Cuenta creada! Bienvenido a Smartfolio 🎉");
       router.push("/dashboard");
       router.refresh();
@@ -146,17 +154,31 @@ export default function RegisterPage() {
               </div>
             ))}
 
-            <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0 }}>
-              Al registrarte aceptas que tus datos serán tratados conforme a la Ley 1581 de 2012.
-            </p>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "9px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                style={{ marginTop: "2px", width: "15px", height: "15px", accentColor: "#16a34a", flexShrink: 0, cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "12.5px", color: "#6b7280", lineHeight: 1.5 }}>
+                Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012. {" "}
+                <Link href="/terminos-publico" target="_blank" style={{ color: "#16a34a", fontWeight: "600" }}>
+                  Ver términos completos
+                </Link>
+              </span>
+            </label>
 
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || !acceptedTerms}
               style={{
-                width: "100%", padding: "12px", background: loading ? "#86efac" : "#16a34a",
-                color: "white", border: "none", borderRadius: "10px",
-                fontSize: "14px", fontWeight: "600", cursor: loading ? "not-allowed" : "pointer",
+                width: "100%", padding: "12px",
+                background: !acceptedTerms ? "#e5e7eb" : loading ? "#86efac" : "#16a34a",
+                color: !acceptedTerms ? "#9ca3af" : "white",
+                border: "none", borderRadius: "10px",
+                fontSize: "14px", fontWeight: "600",
+                cursor: (loading || !acceptedTerms) ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                boxShadow: "0 4px 12px rgba(22,163,74,0.25)",
+                boxShadow: !acceptedTerms ? "none" : "0 4px 12px rgba(22,163,74,0.25)",
               }}>
               {loading ? <><Loader2 size={16} className="animate-spin" /> Creando cuenta...</> : "Crear mi cuenta gratis"}
             </button>

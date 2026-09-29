@@ -92,6 +92,7 @@ export interface Profile {
   created_at:       string;
   updated_at:       string;
   visit_count:      number | null;
+  terms_accepted_at: string | null;
 }
 
 export interface Document {
