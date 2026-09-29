@@ -21,10 +21,19 @@ export function buildWompiReference(profileId: string, plan: PurchasablePlan): s
   return `SF_${profileId}_${plan}_${Date.now()}`;
 }
 
-export function parseWompiReference(reference: string): { profileId: string; plan: string } | null {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Devuelve null si la referencia no tiene el formato esperado, si el perfil no
+// es un UUID válido o si el plan no es uno de los que se venden por Wompi
+// (así una referencia manipulada no puede otorgar "business" u otro valor).
+export function parseWompiReference(
+  reference: string
+): { profileId: string; plan: PurchasablePlan } | null {
   const parts = reference.split("_");
   if (parts.length < 4 || parts[0] !== "SF") return null;
   const [, profileId, plan] = parts;
+  if (!UUID_RE.test(profileId)) return null;
+  if (!isPurchasablePlan(plan)) return null;
   return { profileId, plan };
 }
 

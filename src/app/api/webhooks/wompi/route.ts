@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseWompiReference } from "@/lib/wompi";
+import { parseWompiReference, WOMPI_PLAN_PRICES_COP } from "@/lib/wompi";
 
 // Lee un valor anidado de un objeto usando una ruta tipo "transaction.status"
 function getByPath(obj: unknown, path: string): unknown {
@@ -13,7 +13,15 @@ function getByPath(obj: unknown, path: string): unknown {
 
 interface WompiEventBody {
   event: string;
-  data: { transaction: { id: string; status: string; reference: string } };
+  data: {
+    transaction: {
+      id: string;
+      status: string;
+      reference: string;
+      amount_in_cents: number;
+      currency: string;
+    };
+  };
   signature: { properties: string[]; checksum: string };
   timestamp: number;
   environment: "test" | "prod";
@@ -62,6 +70,17 @@ export async function POST(req: Request) {
   }
 
   if (transaction.status === "APPROVED") {
+    // Validar que lo pagado corresponde al precio del plan (evita activar un plan
+    // con un pago menor). Se responde 200 porque reintentar no cambiaría el resultado.
+    const expectedAmountInCents = WOMPI_PLAN_PRICES_COP[parsed.plan] * 100;
+    if (transaction.amount_in_cents !== expectedAmountInCents || transaction.currency !== "COP") {
+      console.error(
+        "Monto o moneda no coinciden con el plan:",
+        transaction.id, parsed.plan, transaction.amount_in_cents, transaction.currency
+      );
+      return NextResponse.json({ received: true });
+    }
+
     const admin = createAdminClient();
 
     // Activa el plan en el perfil del usuario
