@@ -34,12 +34,11 @@ export default async function PublicPortfolioPage({ params }: Props) {
   const referrer = (await headers()).get("referer") ?? null;
 
   const [{ data: records }, { data: skills }] = await Promise.all([
-    supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
-    supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
-    supabase.from("profiles").update({ visit_count: (profile.visit_count ?? 0) + 1 }).eq("username_slug", username),
-    // Historial detallado para las analíticas Premium (no afecta lo anterior)
-    supabase.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
-  ]);
+  supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
+  supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
+  supabase.rpc("increment_visit_count", { p_username: username }),
+  supabase.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
+]);
 
   const byType = (records ?? []).reduce<Record<string, typeof records>>((acc, r) => {
     acc[r.record_type] = [...(acc[r.record_type] ?? []), r]; return acc;
