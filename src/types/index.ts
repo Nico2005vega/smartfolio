@@ -78,6 +78,7 @@ export interface Profile {
   last_name:        string;
   username_slug:    string | null;
   phone:            string | null;
+  show_phone:       boolean;   // controla si el teléfono se ve en el portafolio público
   city:             string | null;
   country:          string | null;
   bio:              string | null;
@@ -90,8 +91,7 @@ export interface Profile {
   portfolio_public: boolean;
   created_at:       string;
   updated_at:       string;
-  visit_count: number | null;
-  
+  visit_count:      number | null;
 }
 
 export interface Document {
@@ -165,7 +165,10 @@ export interface CVConfiguration {
 // ── Configuración de estilo extendida (CV Builder) ──────────
 // Extiende CVConfiguration con las opciones de personalización
 // visual del cv-builder (fuente, tamaños, estilos de sección, etc.)
-  export interface CVStyleConfig extends CVConfiguration {
+// Nota: show_phone aquí controla el teléfono en el PDF del CV
+// (tabla cv_configurations). No es el mismo que Profile.show_phone,
+// que controla el portafolio público.
+export interface CVStyleConfig extends CVConfiguration {
   font_name?:      string;
   font_family?:    "serif" | "mono" | "sans";
   font_size?:      number;

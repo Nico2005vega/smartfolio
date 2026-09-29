@@ -25,6 +25,9 @@ export default function ProfileForm({ profile, userId }: Props) {
     websiteUrl:  profile?.website_url  ?? "",
   });
 
+  // Consentimiento explícito: el teléfono solo se publica si el titular lo activa
+  const [showPhone, setShowPhone] = useState<boolean>(profile?.show_phone ?? false);
+
   const supabase = createClient();
   const router   = useRouter();
 
@@ -63,6 +66,7 @@ export default function ProfileForm({ profile, userId }: Props) {
       first_name:   form.firstName,
       last_name:    form.lastName,
       phone:        form.phone       || null,
+      show_phone:   showPhone,
       city:         form.city        || null,
       country:      form.country     || null,
       bio:          form.bio         || null,
@@ -130,7 +134,7 @@ export default function ProfileForm({ profile, userId }: Props) {
         </div>
         <div>
           <label style={labelCss}>Teléfono</label>
-          <input name="phone" value={form.phone} onChange={handleChange} onFocus={onFocus} onBlur={onBlur} placeholder="+57 315 687 0466" style={inputCss} />
+          <input name="phone" value={form.phone} onChange={handleChange} onFocus={onFocus} onBlur={onBlur} placeholder="+57 300 000 0000" style={inputCss} />
         </div>
         <div>
           <label style={labelCss}>Ciudad</label>
@@ -140,6 +144,41 @@ export default function ProfileForm({ profile, userId }: Props) {
           <label style={labelCss}>País</label>
           <input name="country" value={form.country} onChange={handleChange} onFocus={onFocus} onBlur={onBlur} placeholder="Colombia" style={inputCss} />
         </div>
+      </div>
+
+      {/* Privacidad del teléfono */}
+      <div style={{
+        display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"16px",
+        padding:"14px 16px", marginBottom:"16px",
+        background:"#f9fafb", border:"1px solid #f0f0f0", borderRadius:"12px",
+      }}>
+        <div>
+          <p style={{ fontSize:"13px", fontWeight:600, color:"#374151", margin:"0 0 2px" }}>
+            Mostrar mi teléfono en el portafolio público
+          </p>
+          <p style={{ fontSize:"12px", color:"#9ca3af", margin:0, lineHeight:1.5 }}>
+            Por defecto tu teléfono no se publica. Si lo activas, cualquier persona que visite tu portafolio público podrá verlo.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showPhone}
+          aria-label="Mostrar teléfono en el portafolio público"
+          onClick={() => setShowPhone(v => !v)}
+          style={{
+            position:"relative", flexShrink:0,
+            width:"44px", height:"24px", borderRadius:"99px", border:"none",
+            background: showPhone ? "#16a34a" : "#d1d5db",
+            cursor:"pointer", transition:"background 0.2s ease", padding:0,
+          }}
+        >
+          <span style={{
+            position:"absolute", top:"2px", left: showPhone ? "22px" : "2px",
+            width:"20px", height:"20px", borderRadius:"50%", background:"white",
+            boxShadow:"0 1px 3px rgba(0,0,0,0.25)", transition:"left 0.2s ease",
+          }} />
+        </button>
       </div>
 
       {/* Bio */}

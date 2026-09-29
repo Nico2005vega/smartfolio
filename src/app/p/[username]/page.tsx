@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS } from "@/types";
 import { formatDate } from "@/lib/utils";
 import type { Metadata } from "next";
-import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye, Mail, BadgeCheck } from "lucide-react";
+import { MapPin, Phone, Globe, ExternalLink, Link as LinkIcon, Eye, BadgeCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { hasFeature } from "@/lib/plan";
 import type { UserPlan } from "@/types";
@@ -33,12 +33,18 @@ export default async function PublicPortfolioPage({ params }: Props) {
 
   const referrer = (await headers()).get("referer") ?? null;
 
-  const [{ data: records }, { data: skills }] = await Promise.all([
-  supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
-  supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
-  supabase.rpc("increment_visit_count", { p_username: username }),
-  supabase.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
-]);
+  const [{ data: records }, { data: skills }, visitRpc, visitInsert] = await Promise.all([
+    supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
+    supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
+    // Incremento controlado del contador (función SQL security definer)
+    supabase.rpc("increment_visit_count", { p_username: username }),
+    // Historial detallado para las analíticas Premium (no afecta lo anterior)
+    supabase.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
+  ]);
+
+  // Los errores quedan en los logs de Vercel en lugar de fallar en silencio
+  if (visitRpc.error) console.error("increment_visit_count:", visitRpc.error.message);
+  if (visitInsert.error) console.error("portfolio_visits:", visitInsert.error.message);
 
   const byType = (records ?? []).reduce<Record<string, typeof records>>((acc, r) => {
     acc[r.record_type] = [...(acc[r.record_type] ?? []), r]; return acc;
@@ -48,7 +54,6 @@ export default async function PublicPortfolioPage({ params }: Props) {
   // En Free/Basic el link de "Verificar" se sigue mostrando igual que
   // siempre (no se le quita nada a nadie), solo que sin el badge especial.
   const showVerifiedBadge = hasFeature("certificateBadge", (profile.plan as UserPlan) ?? "free");
-  
 
   const skillsByCategory = (skills ?? []).reduce<Record<string, typeof skills>>((acc, s) => {
     acc[s.category] = [...(acc[s.category] ?? []), s]; return acc;
@@ -94,7 +99,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
               {profile.first_name} {profile.last_name}
             </h1>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "10px" }}>
-              {profile.city    && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><MapPin size={13} />{profile.city}, {profile.country}</span>}
+              {profile.city && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><MapPin size={13} />{profile.city}, {profile.country}</span>}
               {profile.show_phone && profile.phone && <span style={{ display: "flex", alignItems: "center", gap: "5px" }}><Phone size={13} />{profile.phone}</span>}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
