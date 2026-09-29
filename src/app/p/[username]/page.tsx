@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -12,9 +13,11 @@ interface Props { params: Promise<{ username: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("first_name,last_name")
-    .eq("username_slug", username).single();
+  // Lectura desde el servidor: los visitantes anónimos ya no leen "profiles" por API.
+  // El filtro portfolio_public es obligatorio porque este cliente ignora RLS.
+  const admin = createAdminClient();
+  const { data } = await admin.from("profiles").select("first_name,last_name")
+    .eq("username_slug", username).eq("portfolio_public", true).maybeSingle();
   if (!data) return { title: "Portafolio no encontrado" };
   return {
     title: `${data.first_name} ${data.last_name} | Smartfolio`,
@@ -24,22 +27,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicPortfolioPage({ params }: Props) {
   const { username } = await params;
-  const supabase = await createClient();
+  const supabase = await createClient(); // sesión del visitante (solo para el contador)
+  const admin = createAdminClient();     // lectura de datos públicos desde el servidor
 
-  const { data: profile } = await supabase
-    .from("profiles").select("*").eq("username_slug", username)
-    .eq("portfolio_public", true).single();
-  if (!profile) notFound();
+  // Solo columnas que el portafolio necesita. Nunca "*": así no viajan role ni otros datos.
+  const { data: row } = await admin
+    .from("profiles")
+    .select("id, first_name, last_name, city, country, phone, show_phone, bio, photo_url, linkedin_url, github_url, website_url, plan, visit_count")
+    .eq("username_slug", username)
+    .eq("portfolio_public", true)
+    .maybeSingle();
+  if (!row) notFound();
+
+  // El teléfono solo sale del servidor si el titular lo autorizó
+  const profile = { ...row, phone: row.show_phone ? row.phone : null };
 
   const referrer = (await headers()).get("referer") ?? null;
 
   const [{ data: records }, { data: skills }, visitRpc, visitInsert] = await Promise.all([
-    supabase.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
-    supabase.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
+    admin.from("academic_records").select("*").eq("profile_id", profile.id).eq("is_visible_in_cv", true).order("start_date", { ascending: false }),
+    admin.from("skills").select("*").eq("profile_id", profile.id).order("sort_order"),
     // Incremento controlado del contador (función SQL security definer)
     supabase.rpc("increment_visit_count", { p_username: username }),
     // Historial detallado para las analíticas Premium (no afecta lo anterior)
-    supabase.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
+    admin.from("portfolio_visits").insert({ profile_id: profile.id, referrer }),
   ]);
 
   // Los errores quedan en los logs de Vercel en lugar de fallar en silencio

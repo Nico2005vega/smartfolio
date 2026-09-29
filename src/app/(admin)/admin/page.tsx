@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import AdminDashboardClient from "./AdminDashboardClient";
 
@@ -9,9 +10,14 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // El rol se comprueba con la sesión del usuario (solo lee su propia fila)
   const { data: profile } = await supabase
     .from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") redirect("/dashboard");
+
+  // Solo después de confirmar que es admin se leen los datos globales.
+  // Con la sesión normal, RLS solo deja ver las filas propias.
+  const admin = createAdminClient();
 
   const [
     { count: totalUsers },
@@ -21,15 +27,15 @@ export default async function AdminPage() {
     { data: recordsByType },
     { data: allProfiles },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("academic_records").select("*", { count: "exact", head: true }),
-    supabase.from("documents").select("*", { count: "exact", head: true }),
-    supabase.from("profiles")
+    admin.from("profiles").select("*", { count: "exact", head: true }),
+    admin.from("academic_records").select("*", { count: "exact", head: true }),
+    admin.from("documents").select("*", { count: "exact", head: true }),
+    admin.from("profiles")
       .select("id,first_name,last_name,plan,role,created_at,visit_count")
       .order("created_at", { ascending: false })
       .limit(100),
-    supabase.from("academic_records").select("record_type"),
-    supabase.from("profiles")
+    admin.from("academic_records").select("record_type"),
+    admin.from("profiles")
       .select("created_at")
       .order("created_at", { ascending: true }),
   ]);
