@@ -5,6 +5,8 @@ import { RECORD_TYPE_LABELS, RECORD_TYPE_ICONS, type RecordType, type AcademicRe
 import Link from "next/link";
 import { Plus, Edit, Search, X, Filter } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
+import { openDocument } from "@/lib/documentAccess";
 
 type RecordWithDoc = AcademicRecord & { document: { file_name:string; public_url:string } | null };
 
@@ -21,7 +23,7 @@ export default function AcademicPage() {
       if (!user) return;
       const { data } = await supabase
         .from("academic_records")
-        .select("*, document:documents(file_name,public_url)")
+        .select("*, document:documents(file_name,storage_path)")
         .eq("profile_id", user.id)
         .order("start_date", { ascending: false });
       setRecords(data ?? []);
@@ -180,10 +182,12 @@ export default function AcademicPage() {
                         {r.duration_hours && (
                           <span style={{ fontSize: "11px", color: "#9ca3af" }}>· {r.duration_hours}h</span>
                         )}
-                        {r.document?.public_url && (
-                          <a href={r.document.public_url} target="_blank" style={{ fontSize: "11px", color: "#16a34a", textDecoration: "none" }}>
+                        {r.document?.storage_path && (
+                          <button
+                            onClick={() => openDocument(r.document!.storage_path, "view").catch(e => toast.error(e.message))}
+                            style={{ fontSize: "11px", color: "#16a34a", background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>
                             📎 Ver documento
-                          </a>
+                          </button>
                         )}
                         {!r.is_visible_in_cv && (
                           <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f0f0f0", padding: "1px 6px", borderRadius: "99px" }}>

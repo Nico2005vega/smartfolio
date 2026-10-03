@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText, Upload, Download, Eye, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
+import { openDocument } from "@/lib/documentAccess";
 
 function formatSize(bytes?: number) {
   if (!bytes) return "";
@@ -186,18 +187,20 @@ export default function DocumentsClient({ initialDocs }: Props) {
 
               {/* Acciones */}
               <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                {doc.public_url && (
+                {doc.storage_path && (
                   <>
-                    <a href={doc.public_url} target="_blank" rel="noopener noreferrer"
-                      style={{ width: "34px", height: "34px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0fdf4", textDecoration: "none" }}
+                    <button
+                      onClick={() => openDocument(doc.storage_path, "view").catch(e => toast.error(e.message))}
+                      style={{ width: "34px", height: "34px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0fdf4", border: "none", cursor: "pointer" }}
                       title="Ver">
                       <Eye size={15} color="#16a34a" />
-                    </a>
-                    <a href={doc.public_url} download
-                      style={{ width: "34px", height: "34px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", background: "#eff6ff", textDecoration: "none" }}
+                    </button>
+                    <button
+                      onClick={() => openDocument(doc.storage_path, "download", doc.file_name ?? undefined).catch(e => toast.error(e.message))}
+                      style={{ width: "34px", height: "34px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", background: "#eff6ff", border: "none", cursor: "pointer" }}
                       title="Descargar">
                       <Download size={15} color="#2563eb" />
-                    </a>
+                    </button>
                   </>
                 )}
                 <button
